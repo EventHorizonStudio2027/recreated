@@ -1,0 +1,10 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {isValidSave} from '../src/save-validation.mjs';
+const sample=()=>({player:{level:1,max:100,hp:100,x:450,y:340,xp:0,echoes:0,relics:['Ember']},world:{version:1,enemyHp:1,storm:false}});
+test('accepts valid save',()=>assert.equal(isValidSave(sample()),true));
+test('rejects missing player',()=>{const s=sample();delete s.player;assert.equal(isValidSave(s),false)});
+test('rejects negative HP',()=>{const s=sample();s.player.hp=-1;assert.equal(isValidSave(s),false)});
+test('rejects duplicate relics',()=>{const s=sample();s.player.relics=['Ember','Ember'];assert.equal(isValidSave(s),false)});
+test('rejects invalid world revision',()=>{const s=sample();s.world.version=0;assert.equal(isValidSave(s),false)});
+test('rejects nonfinite coordinate',()=>{const s=sample();s.player.x=Infinity;assert.equal(isValidSave(s),false)});
