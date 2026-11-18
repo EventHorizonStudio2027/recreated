@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "world": "The Weave",
+  "hub": "loomhouse",
+  "regions": [
+    {
+      "id": "mire",
+      "name": "The Mire",
+      "unlocked": true
+    },
+    {
+      "id": "sunken_ruins",
+      "name": "Sunken Ruins",
+      "unlocked": false
+    }
+  ],
+  "protectedPaths": [
+    "economy",
+    "monetization",
+    "progression.core"
+  ],
+  "author": {
+    "maxEnemyHpMultiplier": 1.15,
+    "minEnemyHpMultiplier": 0.85,
+    "maxProposalsPerCycle": 5
+  }
+}
