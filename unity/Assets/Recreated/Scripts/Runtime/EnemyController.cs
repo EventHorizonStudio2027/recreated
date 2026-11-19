@@ -9,6 +9,8 @@ namespace Recreated
         public GameTuning tuning = new GameTuning();
         public Health Vitality { get; private set; }
         private float nextStrike;
+        private float staggerUntil;
+                public bool IsStaggered => Time.time < staggerUntil;
         private float strafeSign;
         private float orbitOffset;
         private float windupEnds = -1f;
@@ -20,11 +22,26 @@ namespace Recreated
             strafeSign = (GetInstanceID() & 1) == 0 ? 1f : -1f;
             orbitOffset = Mathf.Abs(GetInstanceID() % 7) * .31f;
             Vitality.Configure(tuning.enemyHealth);
+            Vitality.Damaged += OnDamaged;
             Vitality.Died += _ => Destroy(gameObject);
+        }
+        public void Configure(Transform followTarget, GameTuning sharedTuning)
+        {
+            target = followTarget;
+            tuning = sharedTuning ?? new GameTuning();
+            tuning.Validate();
+            Vitality.Configure(tuning.enemyHealth);
+        }
+        private void OnDamaged(Health source, float amount)
+        {
+            if (source.IsDead) return;
+            windupEnds = -1f;
+            staggerUntil = Mathf.Max(staggerUntil, Time.time + .16f);
         }
         private void Update()
         {
             if (target == null || Vitality.IsDead) return;
+            if (IsStaggered) return;
             Health targetHealth = target.GetComponent<Health>();
             if (targetHealth == null || targetHealth.IsDead)
             {

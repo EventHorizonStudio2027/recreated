@@ -17,7 +17,7 @@ namespace Recreated
         private void LateUpdate()
         {
             if (eyes == null) return;
-            float intensity = enemy.IsWindingUp ? 1.6f + Mathf.Sin(Time.time * 28f) * .2f : 1f;
+            float intensity = enemy.IsStaggered ? .55f : enemy.IsWindingUp ? 1.6f + Mathf.Sin(Time.time * 28f) * .2f : 1f;
             eyes.localScale = Vector3.Lerp(eyes.localScale, restScale * intensity, Time.deltaTime * 20f);
         }
     }

@@ -100,8 +100,7 @@ namespace Recreated
                 EnemyController enemy = obj.AddComponent<EnemyController>();
                 obj.AddComponent<DamageFlash>();
                 obj.AddComponent<EnemyWindupVisual>();
-                enemy.target = player.transform;
-                enemy.tuning = tuning;
+                enemy.Configure(player.transform, tuning);
                 enemies.Add(enemy);
             }
         }
@@ -120,7 +119,7 @@ namespace Recreated
             GUI.color = Color.white;
             GUI.Label(new Rect(26, 20, content, 30), "RECREATED  /  THE MIRE", title);
             GUI.Label(new Rect(26, 64, content, 22), "HEALTH   " + Mathf.CeilToInt(player.Vitality.Current) + " / " + player.Vitality.Maximum);
-            GUI.Label(new Rect(26, 90, content, 22), finished ? "EXPEDITION CLEARED" : nextWaveAt >= 0f ? "NEXT CHAMBER IN " + Mathf.CeilToInt(nextWaveAt - Time.time) + "s" : "CHAMBER " + CurrentWave + " / " + tuning.wavesPerExpedition + "   •   THREATS " + enemies.Count);
+            GUI.Label(new Rect(26, 90, content, 22), finished ? "EXPEDITION CLEARED" : nextWaveAt >= 0f ? "NEXT CHAMBER IN " + Mathf.Max(0, Mathf.CeilToInt(nextWaveAt - Time.time)) + "s" : "CHAMBER " + CurrentWave + " / " + tuning.wavesPerExpedition + "   •   THREATS " + enemies.Count);
             GUI.Label(new Rect(26, 117, content, 20), "ECHOES " + (progress == null ? 0 : progress.earnedEchoes) + "   •   CLEARS " + (progress == null ? 0 : progress.completedRuns));
             float cooldownWidth = Mathf.Max(1f, Mathf.Min(112f, (content - 14f) * .5f));
             float pulseReady = Mathf.Clamp01(1f - (player.PulseReadyAt - Time.time) / Mathf.Max(.1f, player.tuning.pulseCooldown));
@@ -134,7 +133,13 @@ namespace Recreated
             GUI.color = new Color(.93f, .75f, .48f);
             GUI.DrawTexture(new Rect(26 + cooldownWidth + 14, 161, cooldownWidth * dodgeReady, 5), Texture2D.whiteTexture);
             GUI.color = Color.white;
-            if ((finished || player.Vitality.IsDead) && GUI.Button(new Rect(14, 210, 180, 38), "RESTART EXPEDITION")) Restart();
+            if (finished || player.Vitality.IsDead)
+            {
+                GUIStyle outcome = new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold, fontSize = 15 };
+                outcome.normal.textColor = finished ? new Color(.93f, .75f, .48f) : new Color(1f, .55f, .5f);
+                GUI.Label(new Rect(14, 194, width, 22), finished ? "THE MIRE ENDURES  •  +2 ECHOES" : "THE WEAVER HAS FALLEN", outcome);
+                if (GUI.Button(new Rect(14, 222, Mathf.Min(180, width), 38), "RESTART EXPEDITION")) Restart();
+            }
         }
     }
 }
