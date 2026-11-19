@@ -75,6 +75,7 @@ namespace Recreated.Editor
             player.AddComponent<CharacterController>();
             player.AddComponent<Health>();
             PlayerController controller = player.AddComponent<PlayerController>();
+            player.AddComponent<DamageFlash>();
             GameObject visor = GameObject.CreatePrimitive(PrimitiveType.Cube);
             visor.name = "Weaver — glowing visor";
             visor.transform.SetParent(player.transform, false);

@@ -10,6 +10,7 @@ namespace Recreated
         public float Current { get; private set; }
         public bool IsDead => Current <= 0;
         public event Action<Health> Died;
+        public event Action<Health, float> Damaged;
         private void Awake() => Current = maximum;
         public void Configure(float max)
         {
@@ -21,6 +22,7 @@ namespace Recreated
             if (IsDead || amount <= 0) return 0;
             float actual = Mathf.Min(Current, amount);
             Current -= actual;
+            Damaged?.Invoke(this, actual);
             if (IsDead) Died?.Invoke(this);
             return actual;
         }
