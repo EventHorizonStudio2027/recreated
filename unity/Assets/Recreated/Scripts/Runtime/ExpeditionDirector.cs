@@ -98,6 +98,7 @@ namespace Recreated
                 Destroy(eyes.GetComponent<BoxCollider>());
                 eyes.GetComponent<Renderer>().material.color = new Color(.79f, .58f, 1f);
                 EnemyController enemy = obj.AddComponent<EnemyController>();
+                obj.AddComponent<DamageFlash>();
                 enemy.target = player.transform;
                 enemy.tuning = tuning;
                 enemies.Add(enemy);
