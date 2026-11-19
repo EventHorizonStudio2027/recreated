@@ -30,3 +30,12 @@ test('HUD includes persistent progress and maintains controls',()=>{
  assert.match(s,/Q PULSE/);
  assert.match(s,/Screen\.width/);
 });
+
+test('Shade windups are visible and cancel when player leaves melee range',()=>{
+ const enemy=read('Scripts/Runtime/EnemyController.cs');
+ assert.match(enemy,/windupEnds = -1f/);
+ assert.match(enemy,/windupEnds = Time\.time \+ \.42f/);
+ assert.match(enemy,/public bool IsWindingUp/);
+ assert.match(read('Scripts/Runtime/EnemyWindupVisual.cs'),/enemy\.IsWindingUp/);
+ assert.match(read('Scripts/Runtime/ExpeditionDirector.cs'),/AddComponent<EnemyWindupVisual>/);
+});
