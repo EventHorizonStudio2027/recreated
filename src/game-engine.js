@@ -124,6 +124,7 @@ function enableContinue(){const button=el('continue');button.disabled=false;butt
 el('inspectAuthor').onclick=inspectAuthor;
 window.RecreatedDebug={authorProposal,makeHazards,chamberCover,getHazards:()=>hazards.map(h=>({...h})),getState:()=>({room,player:{...player},world:{...world},telemetry:{...telemetry},enemyCount:enemies.length,obstacles:obstacles.map(o=>({...o})),coverClearance:Math.min(Infinity,...obstacles.map(o=>Math.hypot(player.x-o.x,player.y-o.y)-o.r-24)),enemyTypes:enemies.map(e=>e.type),dropCount:drops.length,wave,waveCount,waveDelayUntil,heals,bossDefeated,combo,runTime,cleared,hazardHits,roomVisits:{...roomVisits}}),patch,rollback,enter,start,stop,pulse,attack,dodge,heal};
 
+if(window.__RECREATED_E2E__===true){Object.assign(window.RecreatedDebug,{grantEcho:gain,getSynergy:relicSynergy,hasLineOfSight:clearStrikePath,forceFinalWave:()=>{if(room!=='ruins')return false;wave=waveCount;spawnNextWave();return true}})}
 const saveNowButton=el('saveNow');if(saveNowButton)saveNowButton.addEventListener('click',manualSave);
 })();
 
