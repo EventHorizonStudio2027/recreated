@@ -9,6 +9,7 @@ namespace Recreated
         public Color color = new Color(.48f, .81f, 1f, .75f);
         private PlayerController player;
         private LineRenderer ring;
+        private Material ringMaterial;
         private void Awake()
         {
             player = GetComponent<PlayerController>();
@@ -21,8 +22,14 @@ namespace Recreated
             ring.widthMultiplier = .09f;
             ring.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             ring.receiveShadows = false;
-            Shader shader = Shader.Find("Sprites/Default");
-            if (shader != null) ring.material = new Material(shader);
+            Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
+            if (shader == null) shader = Shader.Find("Sprites/Default");
+            if (shader == null) shader = Shader.Find("Unlit/Color");
+            if (shader != null)
+            {
+                ringMaterial = new Material(shader);
+                ring.sharedMaterial = ringMaterial;
+            }
             ring.startColor = color;
             ring.endColor = color;
             ring.enabled = false;
@@ -46,7 +53,7 @@ namespace Recreated
         }
         private void OnDestroy()
         {
-            if (ring != null && ring.material != null) Destroy(ring.material);
+            if (ringMaterial != null) Destroy(ringMaterial);
         }
     }
 }

@@ -17,6 +17,7 @@ namespace Recreated
         private float dodgeEnd;
         private float nextPulse;
         private Vector3 dodgeDirection;
+        private float verticalSpeed;
         private float lastAttackAt = -999f;
         private float lastPulseAt = -999f;
         public float AttackAnimation01 => Mathf.Clamp01((Time.time - lastAttackAt) / tuning.attackCooldown);
@@ -67,7 +68,8 @@ namespace Recreated
                 nextDodge = Time.time + tuning.dodgeCooldown;
             }
             Vector3 velocity = Time.time < dodgeEnd ? dodgeDirection * tuning.dodgeSpeed : direction * tuning.moveSpeed;
-            motor.Move((velocity + Vector3.down * 1f) * Time.deltaTime);
+            verticalSpeed = motor.isGrounded ? -2f : Mathf.Max(-35f, verticalSpeed + Physics.gravity.y * Time.deltaTime);
+            motor.Move((velocity + Vector3.up * verticalSpeed) * Time.deltaTime);
             if (((Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame) || keyboard.spaceKey.wasPressedThisFrame) && Time.time >= nextAttack)
             {
                 nextAttack = Time.time + tuning.attackCooldown;
@@ -88,10 +90,11 @@ namespace Recreated
             foreach (Collider hit in hits)
             {
                 EnemyController enemy = hit.GetComponentInParent<EnemyController>();
-                if (enemy == null || enemy.Vitality.IsDead || !struck.Add(enemy)) continue;
+                if (enemy == null || enemy.Vitality.IsDead || struck.Contains(enemy)) continue;
                 Vector3 toEnemy = enemy.transform.position - transform.position;
                 toEnemy.y = 0;
                 if (directional && Vector3.Dot(facing, toEnemy.normalized) < .2f) continue;
+                struck.Add(enemy);
                 enemy.Vitality.Damage(damage);
             }
         }

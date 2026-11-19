@@ -25,6 +25,12 @@ namespace Recreated
         private void Update()
         {
             if (target == null || Vitality.IsDead) return;
+            Health targetHealth = target.GetComponent<Health>();
+            if (targetHealth == null || targetHealth.IsDead)
+            {
+                windupEnds = -1f;
+                return;
+            }
             Vector3 delta = target.position - transform.position;
             delta.y = 0;
             if (delta.sqrMagnitude > 2.25f)
@@ -42,7 +48,7 @@ namespace Recreated
                 if (Time.time < windupEnds) return;
                 windupEnds = -1f;
                 nextStrike = Time.time + tuning.enemyAttackCooldown;
-                Health player = target.GetComponent<Health>();
+                Health player = targetHealth;
                 PlayerController controller = target.GetComponent<PlayerController>();
                 if (player != null && (controller == null || controller.CanTakeDamage)) player.Damage(tuning.enemyDamage);
             }
