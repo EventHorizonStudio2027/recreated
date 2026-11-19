@@ -17,6 +17,10 @@ namespace Recreated
         private float dodgeEnd;
         private float nextPulse;
         private Vector3 dodgeDirection;
+        private float lastAttackAt = -999f;
+        private float lastPulseAt = -999f;
+        public float AttackAnimation01 => Mathf.Clamp01((Time.time - lastAttackAt) / tuning.attackCooldown);
+        public float PulseAnimation01 => Mathf.Clamp01((Time.time - lastPulseAt) / .42f);
         public Health Vitality => health;
         public float AttackReadyAt => nextAttack;
         public float DodgeReadyAt => nextDodge;
@@ -67,11 +71,13 @@ namespace Recreated
             if (((Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame) || keyboard.spaceKey.wasPressedThisFrame) && Time.time >= nextAttack)
             {
                 nextAttack = Time.time + tuning.attackCooldown;
+                lastAttackAt = Time.time;
                 HitEnemies(tuning.attackRadius, tuning.attackDamage, true);
             }
             if (keyboard.qKey.wasPressedThisFrame && Time.time >= nextPulse)
             {
                 nextPulse = Time.time + tuning.pulseCooldown;
+                lastPulseAt = Time.time;
                 HitEnemies(tuning.pulseRadius, tuning.pulseDamage, false);
             }
         }
