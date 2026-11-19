@@ -28,7 +28,7 @@ namespace Recreated
             health = GetComponent<Health>();
             health.Configure(tuning.playerHealth);
             motor.height = 2f;
-            motor.center = new Vector3(0, 1, 0);
+            motor.center = Vector3.zero;
             motor.radius = .4f;
         }
         private void Update()
