@@ -99,6 +99,7 @@ namespace Recreated
                 eyes.GetComponent<Renderer>().material.color = new Color(.79f, .58f, 1f);
                 EnemyController enemy = obj.AddComponent<EnemyController>();
                 obj.AddComponent<DamageFlash>();
+                obj.AddComponent<EnemyWindupVisual>();
                 enemy.target = player.transform;
                 enemy.tuning = tuning;
                 enemies.Add(enemy);
