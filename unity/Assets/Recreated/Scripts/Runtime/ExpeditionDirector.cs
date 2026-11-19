@@ -11,16 +11,31 @@ namespace Recreated
         public int Clears { get; private set; }
         private readonly List<EnemyController> enemies = new List<EnemyController>();
         private bool finished;
+        private bool defeatRecorded;
+        private ExpeditionProgress progress;
+        
         private float nextWaveAt = -1f;
         private const float ChamberBreather = 1.8f;
         private void Start()
         {
             tuning.Validate();
+            progress = ProgressStore.Load();
             SpawnWave();
         }
         private void Update()
         {
-            if (finished || player == null || player.Vitality.IsDead) return;
+            if (player == null) return;
+            if (player.Vitality.IsDead)
+            {
+                if (!defeatRecorded)
+                {
+                    defeatRecorded = true;
+                    progress.RecordDefeat(CurrentWave);
+                    ProgressStore.Save(progress);
+                }
+                return;
+            }
+            if (finished) return;
             enemies.RemoveAll(e => e == null || e.Vitality.IsDead);
             if (enemies.Count > 0) return;
             if (CurrentWave < tuning.wavesPerExpedition)
@@ -40,6 +55,8 @@ namespace Recreated
             {
                 finished = true;
                 Clears++;
+                progress.RecordClear(CurrentWave);
+                ProgressStore.Save(progress);
             }
         }
         public void Restart()
@@ -48,6 +65,7 @@ namespace Recreated
             enemies.Clear();
             CurrentWave = 0;
             finished = false;
+            defeatRecorded = false;
             nextWaveAt = -1f;
             if (player != null) player.Vitality.Configure(tuning.playerHealth);
             SpawnWave();
@@ -92,7 +110,7 @@ namespace Recreated
             title.normal.textColor = new Color(.98f, .85f, .64f);
             float width = Mathf.Min(344, Screen.width - 28);
             float content = Mathf.Max(180, width - 32);
-            GUI.Box(new Rect(14, 14, width, 140), "");
+            GUI.Box(new Rect(14, 14, width, 168), "");
             GUI.color = new Color(.13f, .17f, .23f);
             GUI.DrawTexture(new Rect(26, 55, content, 4), Texture2D.whiteTexture);
             GUI.color = new Color(.93f, .75f, .48f);
@@ -101,8 +119,9 @@ namespace Recreated
             GUI.Label(new Rect(26, 20, content, 30), "RECREATED  /  THE MIRE", title);
             GUI.Label(new Rect(26, 64, content, 22), "HEALTH   " + Mathf.CeilToInt(player.Vitality.Current) + " / " + player.Vitality.Maximum);
             GUI.Label(new Rect(26, 90, content, 22), finished ? "EXPEDITION CLEARED" : nextWaveAt >= 0f ? "NEXT CHAMBER IN " + Mathf.CeilToInt(nextWaveAt - Time.time) + "s" : "CHAMBER " + CurrentWave + " / " + tuning.wavesPerExpedition + "   •   THREATS " + enemies.Count);
-            GUI.Label(new Rect(26, 117, content, 20), "WASD MOVE  •  CLICK ATTACK  •  Q PULSE  •  SHIFT DODGE");
-            if ((finished || player.Vitality.IsDead) && GUI.Button(new Rect(14, 164, 180, 38), "RESTART EXPEDITION")) Restart();
+            GUI.Label(new Rect(26, 117, content, 20), "ECHOES " + (progress == null ? 0 : progress.earnedEchoes) + "   •   CLEARS " + (progress == null ? 0 : progress.completedRuns));
+            GUI.Label(new Rect(26, 142, content, 20), "WASD MOVE   CLICK ATTACK   Q PULSE   SHIFT DODGE");
+            if ((finished || player.Vitality.IsDead) && GUI.Button(new Rect(14, 192, 180, 38), "RESTART EXPEDITION")) Restart();
         }
     }
 }
