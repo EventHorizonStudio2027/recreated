@@ -35,7 +35,7 @@ test('backup-only save enables Continue and recovers progress',async({page})=>{
  await page.locator('#saveNow').click();
  await page.evaluate(k=>{localStorage.setItem(k+'-backup',localStorage.getItem(k));localStorage.removeItem(k)},key);
  await page.reload();
- await expect(page.locator('#journeyHint')).toContainText('BACKUP FOUND');
+ await expect(page.locator('#journeyHint')).toContainText('BACKUP READY');
  await expect(page.locator('#continue')).toBeEnabled();
  await page.locator('#continue').click();
  await expect(page.locator('#gameLayer')).toBeVisible();
