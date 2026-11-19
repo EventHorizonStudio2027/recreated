@@ -77,10 +77,11 @@ namespace Recreated
             GUIStyle title = new GUIStyle(GUI.skin.label) { fontSize = 20, fontStyle = FontStyle.Bold };
             title.normal.textColor = new Color(.98f, .85f, .64f);
             GUI.Box(new Rect(14, 14, 344, 140), "");
-            GUI.color = new Color(.93f, .75f, .48f);
+            GUI.color = new Color(.13f, .17f, .23f);
             GUI.DrawTexture(new Rect(26, 55, 312, 4), Texture2D.whiteTexture);
-            GUI.color = Color.white;
+            GUI.color = new Color(.93f, .75f, .48f);
             GUI.DrawTexture(new Rect(26, 55, 312 * Mathf.Clamp01(player.Vitality.Current / player.Vitality.Maximum), 4), Texture2D.whiteTexture);
+            GUI.color = Color.white;
             GUI.Label(new Rect(26, 20, 300, 30), "RECREATED  /  THE MIRE", title);
             GUI.Label(new Rect(26, 64, 300, 22), "HEALTH   " + Mathf.CeilToInt(player.Vitality.Current) + " / " + player.Vitality.Maximum);
             GUI.Label(new Rect(26, 90, 320, 22), finished ? "EXPEDITION CLEARED" : nextWaveAt >= 0f ? "NEXT CHAMBER IN " + Mathf.CeilToInt(nextWaveAt - Time.time) + "s" : "CHAMBER " + CurrentWave + " / " + tuning.wavesPerExpedition + "   •   THREATS " + enemies.Count);
