@@ -1,0 +1,22 @@
+name: Browser smoke tests
+on:
+  push:
+    branches: [develop]
+  pull_request:
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Playwright test runner
+        run: npm install --no-save @playwright/test
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Verify playable entrypoint
+        run: test -f index.html || { echo 'Playable index.html missing (issue #1)'; exit 1; }
+      - name: Browser tests
+        run: npx playwright test --config=playwright.config.mjs
