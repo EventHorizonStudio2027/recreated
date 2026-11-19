@@ -14,5 +14,5 @@ test('offline artwork is embedded',()=>{
 });
 test('playable entrypoint contains main game elements',()=>{
  for(const id of ['new','continue','gameLayer','playfield','gameHud','saveNow'])
- assert.match(html,new RegExp('id=["\\\']'+id+'["\\\']'),'missing '+id);
+ assert.ok(html.includes('id="'+id+'"'),'missing '+id);
 });
