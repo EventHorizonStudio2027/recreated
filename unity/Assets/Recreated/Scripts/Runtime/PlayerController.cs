@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace Recreated
 {
@@ -33,14 +34,16 @@ namespace Recreated
         private void Update()
         {
             if (health.IsDead) return;
-            float x = Input.GetAxisRaw("Horizontal");
-            float z = Input.GetAxisRaw("Vertical");
+            Keyboard keyboard = Keyboard.current;
+            if (keyboard == null) return;
+            float x = (keyboard.dKey.isPressed || keyboard.rightArrowKey.isPressed ? 1f : 0f) - (keyboard.aKey.isPressed || keyboard.leftArrowKey.isPressed ? 1f : 0f);
+            float z = (keyboard.wKey.isPressed || keyboard.upArrowKey.isPressed ? 1f : 0f) - (keyboard.sKey.isPressed || keyboard.downArrowKey.isPressed ? 1f : 0f);
             Vector3 direction = Vector3.ClampMagnitude(new Vector3(x, 0, z), 1f);
             if (direction.sqrMagnitude > .01f) facing = direction.normalized;
             Camera cam = Camera.main;
-            if (cam != null)
+            if (cam != null && Mouse.current != null)
             {
-                Ray ray = cam.ScreenPointToRay(Input.mousePosition);
+                Ray ray = cam.ScreenPointToRay(Mouse.current.position.ReadValue());
                 Plane floor = new Plane(Vector3.up, Vector3.zero);
                 if (floor.Raycast(ray, out float distance))
                 {
@@ -50,7 +53,7 @@ namespace Recreated
                 }
             }
             transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(facing), Time.deltaTime * 16f);
-            if (Input.GetKeyDown(KeyCode.LeftShift) && Time.time >= nextDodge && direction.sqrMagnitude > .01f)
+            if (keyboard.leftShiftKey.wasPressedThisFrame && Time.time >= nextDodge && direction.sqrMagnitude > .01f)
             {
                 dodgeDirection = direction.normalized;
                 dodgeEnd = Time.time + tuning.dodgeDuration;
@@ -58,12 +61,12 @@ namespace Recreated
             }
             Vector3 velocity = Time.time < dodgeEnd ? dodgeDirection * tuning.dodgeSpeed : direction * tuning.moveSpeed;
             motor.Move((velocity + Vector3.down * 1f) * Time.deltaTime);
-            if ((Input.GetMouseButtonDown(0) || Input.GetKeyDown(KeyCode.Space)) && Time.time >= nextAttack)
+            if (((Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame) || keyboard.spaceKey.wasPressedThisFrame) && Time.time >= nextAttack)
             {
                 nextAttack = Time.time + tuning.attackCooldown;
                 HitEnemies(tuning.attackRadius, tuning.attackDamage, true);
             }
-            if (Input.GetKeyDown(KeyCode.Q) && Time.time >= nextPulse)
+            if (keyboard.qKey.wasPressedThisFrame && Time.time >= nextPulse)
             {
                 nextPulse = Time.time + tuning.pulseCooldown;
                 HitEnemies(tuning.pulseRadius, tuning.pulseDamage, false);
