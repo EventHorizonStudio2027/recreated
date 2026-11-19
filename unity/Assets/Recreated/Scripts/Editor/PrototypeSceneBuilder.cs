@@ -64,6 +64,8 @@ namespace Recreated.Editor
             cameraObject.transform.position = new Vector3(0, 22, -18);
             cameraObject.transform.rotation = Quaternion.Euler(52, 0, 0);
             cameraObject.AddComponent<AudioListener>();
+            FollowCamera follow = cameraObject.AddComponent<FollowCamera>();
+            follow.target = player.transform;
 
             GameObject director = new GameObject("Expedition — waves and HUD");
             ExpeditionDirector expedition = director.AddComponent<ExpeditionDirector>();
