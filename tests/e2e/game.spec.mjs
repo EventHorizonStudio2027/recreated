@@ -50,3 +50,34 @@ test('tools menu opens, supports keyboard and closes',async({page})=>{
   await page.keyboard.press('Escape');
   await expect(toggle).toHaveAttribute('aria-expanded','false');
 });
+
+test('expedition transition, deterministic cover and world changes',async({page})=>{
+  await page.goto(url,{waitUntil:'domcontentloaded'});
+  await page.locator('#new').click();
+  const initial=await page.evaluate(()=>window.RecreatedDebug.getState());
+  expect(initial.room).toBe('hub');
+  await page.evaluate(()=>window.RecreatedDebug.enter('mire'));
+  const mire=await page.evaluate(()=>window.RecreatedDebug.getState());
+  expect(mire.room).toBe('mire');
+  expect(mire.enemyCount).toBeGreaterThan(0);
+  expect(mire.roomVisits.mire).toBeGreaterThan(0);
+  const cover=await page.evaluate(()=>window.RecreatedDebug.chamberCover('mire',1,1));
+  expect(cover).toEqual(await page.evaluate(()=>window.RecreatedDebug.chamberCover('mire',1,1)));
+  await page.evaluate(()=>window.RecreatedDebug.enter('ruins'));
+  const ruins=await page.evaluate(()=>window.RecreatedDebug.getState());
+  expect(ruins.room).toBe('ruins');
+  expect(ruins.enemyCount).toBeGreaterThan(0);
+});
+
+test('combat actions, relic readout and responsive viewport',async({page})=>{
+  await page.goto(url,{waitUntil:'domcontentloaded'});
+  await page.locator('#new').click();
+  await page.evaluate(()=>window.RecreatedDebug.enter('mire'));
+  await page.evaluate(()=>{window.RecreatedDebug.attack();window.RecreatedDebug.pulse();window.RecreatedDebug.dodge()});
+  const state=await page.evaluate(()=>window.RecreatedDebug.getState());
+  expect(state.player.hp).toBeGreaterThan(0);
+  await expect(page.locator('#relicText')).toBeAttached();
+  await page.setViewportSize({width:390,height:844});
+  await expect(page.locator('#playfield')).toBeAttached();
+  await expect(page.locator('#mobilePad')).toBeAttached();
+});
