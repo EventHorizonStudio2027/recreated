@@ -11,6 +11,8 @@ namespace Recreated
         public int Clears { get; private set; }
         private readonly List<EnemyController> enemies = new List<EnemyController>();
         private bool finished;
+        private float nextWaveAt = -1f;
+        private const float ChamberBreather = 1.8f;
         private void Start()
         {
             tuning.Validate();
@@ -23,8 +25,16 @@ namespace Recreated
             if (enemies.Count > 0) return;
             if (CurrentWave < tuning.wavesPerExpedition)
             {
-                player.Vitality.Heal(player.Vitality.Maximum * .12f);
-                SpawnWave();
+                if (nextWaveAt < 0f)
+                {
+                    player.Vitality.Heal(player.Vitality.Maximum * .12f);
+                    nextWaveAt = Time.time + ChamberBreather;
+                }
+                if (Time.time >= nextWaveAt)
+                {
+                    nextWaveAt = -1f;
+                    SpawnWave();
+                }
             }
             else
             {
@@ -38,6 +48,7 @@ namespace Recreated
             enemies.Clear();
             CurrentWave = 0;
             finished = false;
+            nextWaveAt = -1f;
             if (player != null) player.Vitality.Configure(tuning.playerHealth);
             SpawnWave();
         }
@@ -65,12 +76,17 @@ namespace Recreated
             if (player == null) return;
             GUIStyle title = new GUIStyle(GUI.skin.label) { fontSize = 20, fontStyle = FontStyle.Bold };
             title.normal.textColor = new Color(.98f, .85f, .64f);
-            GUI.Box(new Rect(14, 14, 330, 120), "");
+            GUI.Box(new Rect(14, 14, 344, 140), "");
+            GUI.color = new Color(.13f, .17f, .23f);
+            GUI.DrawTexture(new Rect(26, 55, 312, 4), Texture2D.whiteTexture);
+            GUI.color = new Color(.93f, .75f, .48f);
+            GUI.DrawTexture(new Rect(26, 55, 312 * Mathf.Clamp01(player.Vitality.Current / player.Vitality.Maximum), 4), Texture2D.whiteTexture);
+            GUI.color = Color.white;
             GUI.Label(new Rect(26, 20, 300, 30), "RECREATED  /  THE MIRE", title);
-            GUI.Label(new Rect(26, 53, 300, 22), "HEALTH   " + Mathf.CeilToInt(player.Vitality.Current) + " / " + player.Vitality.Maximum);
-            GUI.Label(new Rect(26, 76, 300, 22), finished ? "EXPEDITION CLEARED" : "CHAMBER " + CurrentWave + " / " + tuning.wavesPerExpedition + "   •   THREATS " + enemies.Count);
-            GUI.Label(new Rect(26, 100, 300, 20), "WASD MOVE  •  CLICK ATTACK  •  Q PULSE  •  SHIFT DODGE");
-            if ((finished || player.Vitality.IsDead) && GUI.Button(new Rect(14, 146, 180, 38), "RESTART EXPEDITION")) Restart();
+            GUI.Label(new Rect(26, 64, 300, 22), "HEALTH   " + Mathf.CeilToInt(player.Vitality.Current) + " / " + player.Vitality.Maximum);
+            GUI.Label(new Rect(26, 90, 320, 22), finished ? "EXPEDITION CLEARED" : nextWaveAt >= 0f ? "NEXT CHAMBER IN " + Mathf.CeilToInt(nextWaveAt - Time.time) + "s" : "CHAMBER " + CurrentWave + " / " + tuning.wavesPerExpedition + "   •   THREATS " + enemies.Count);
+            GUI.Label(new Rect(26, 117, 320, 20), "WASD MOVE  •  CLICK ATTACK  •  Q PULSE  •  SHIFT DODGE");
+            if ((finished || player.Vitality.IsDead) && GUI.Button(new Rect(14, 164, 180, 38), "RESTART EXPEDITION")) Restart();
         }
     }
 }

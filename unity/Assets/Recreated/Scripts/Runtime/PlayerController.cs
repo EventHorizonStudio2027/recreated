@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using System.Collections.Generic;
 
 namespace Recreated
 {
@@ -20,6 +21,8 @@ namespace Recreated
         public float AttackReadyAt => nextAttack;
         public float DodgeReadyAt => nextDodge;
         public float PulseReadyAt => nextPulse;
+        public bool IsDodging => Time.time < dodgeEnd;
+        public bool CanTakeDamage => !IsDodging && !health.IsDead;
 
         private void Awake()
         {
@@ -74,11 +77,12 @@ namespace Recreated
         }
         private void HitEnemies(float radius, float damage, bool directional)
         {
-            Collider[] hits = Physics.OverlapSphere(transform.position + Vector3.up, radius, enemyLayers, QueryTriggerInteraction.Ignore);
+            Collider[] hits = Physics.OverlapSphere(transform.position, radius, enemyLayers, QueryTriggerInteraction.Ignore);
+            HashSet<EnemyController> struck = new HashSet<EnemyController>();
             foreach (Collider hit in hits)
             {
                 EnemyController enemy = hit.GetComponentInParent<EnemyController>();
-                if (enemy == null || enemy.Vitality.IsDead) continue;
+                if (enemy == null || enemy.Vitality.IsDead || !struck.Add(enemy)) continue;
                 Vector3 toEnemy = enemy.transform.position - transform.position;
                 toEnemy.y = 0;
                 if (directional && Vector3.Dot(facing, toEnemy.normalized) < .2f) continue;
