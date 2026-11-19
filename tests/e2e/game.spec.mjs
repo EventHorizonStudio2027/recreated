@@ -17,6 +17,7 @@ test('start game, use controls dialog and keyboard shortcut',async({page})=>{
   await page.locator('#new').click();
   await expect(page.locator('#gameLayer')).toBeVisible();
   await expect(page.locator('#playfield')).toBeVisible();
+  await page.locator('#gameToolsToggle').click();
   await page.locator('#controlsHelp').click();
   await expect(page.locator('#controlsDialog')).toBeVisible();
   await expect(page.locator('#controlsTitle')).toHaveText('Controls');
@@ -24,6 +25,7 @@ test('start game, use controls dialog and keyboard shortcut',async({page})=>{
   await expect(page.locator('#controlsDialog')).not.toBeVisible();
   await page.keyboard.press('Shift+/');
   await expect(page.locator('#controlsDialog')).toBeVisible();
+  await page.keyboard.press('Escape');
 });
 
 test('save, reload and continue',async({page})=>{
