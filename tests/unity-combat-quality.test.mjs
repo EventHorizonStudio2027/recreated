@@ -6,7 +6,7 @@ const read=name=>readFileSync(root+name+'.cs','utf8');
 test('attack applies at most one hit per enemy and uses avatar-centered physics',()=>{
  const s=read('PlayerController');
  assert.match(s,/HashSet<EnemyController> struck/);
- assert.match(s,/!struck\.Add\(enemy\)/);
+ assert.match(s,/struck\\.Contains\\(enemy\\)/);
  assert.match(s,/Physics\.OverlapSphere\(transform\.position, radius/);
 });
 test('dodge grants defensive invulnerability and enemies honor it',()=>{
