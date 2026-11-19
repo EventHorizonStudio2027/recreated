@@ -1,0 +1,10 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {parsePortableSave,serializePortableSave,prepareImport,MAX_IMPORT_BYTES} from '../src/portable-save.mjs';
+const sample=()=>({player:{level:1,max:100,hp:100,x:450,y:340,xp:0,echoes:0,relics:['Ember']},world:{version:1,enemyHp:1,storm:false}});
+test('round-trip portable save',()=>assert.deepEqual(parsePortableSave(serializePortableSave(sample())),sample()));
+test('rejects malformed JSON',()=>assert.throws(()=>parsePortableSave('{')));
+test('rejects invalid HP',()=>{const d=sample();d.player.hp=-1;assert.throws(()=>serializePortableSave(d))});
+test('rejects oversized import',()=>assert.throws(()=>parsePortableSave('x'.repeat(MAX_IMPORT_BYTES+1))));
+test('preserves valid prior save',()=>{const p=sample(),n=sample();n.player.hp=80;const result=prepareImport(JSON.stringify(n),JSON.stringify(p));assert.equal(JSON.parse(result.next).player.hp,80);assert.equal(JSON.parse(result.backup).player.hp,100)});
+test('does not preserve corrupted backup',()=>{const result=prepareImport(JSON.stringify(sample()),'{');assert.equal(result.backup,null)});
