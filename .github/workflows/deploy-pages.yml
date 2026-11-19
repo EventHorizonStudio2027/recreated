@@ -1,7 +1,7 @@
 name: Deploy Recreated playable to GitHub Pages
 on:
   push:
-    branches: [develop]
+    branches: [main, develop]
   workflow_dispatch:
 permissions:
   contents: read
