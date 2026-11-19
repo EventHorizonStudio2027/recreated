@@ -36,3 +36,10 @@
 6. Only then call the Unity foundation **verified** and close GitHub issue #21.
 
 Do not delete or rewrite the web game while migration is incomplete.
+
+## Current import risk and next verification
+
+- Runtime assembly explicitly references `Unity.InputSystem`; missing this reference previously risked an Editor compile error.
+- The scene generator uses URP/Lit materials when available, with a Standard fallback; final URP pipeline asset assignment and lighting must be checked in Unity Editor.
+- The generated scene is not committed yet because it requires Unity Editor to serialize it. Generate via **Recreated > Generate Prototype Scene**.
+- Verify material appearance, collider behavior, enemy pursuit, camera tracking, HUD scaling and console errors in the Editor. GitHub source tests do not establish runtime correctness.

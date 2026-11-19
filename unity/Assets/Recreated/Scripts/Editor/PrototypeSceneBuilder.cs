@@ -27,6 +27,9 @@ namespace Recreated.Editor
             floor.name = "Mire — procedural ground";
             floor.transform.localScale = new Vector3(4, 1, 4);
             floor.GetComponent<Renderer>().sharedMaterial = MakeMaterial("Mire Ground", new Color(.12f, .23f, .2f));
+            Material stone = MakeMaterial("Ruins Stone", new Color(.26f, .34f, .36f));
+            Material ember = MakeMaterial("Ember Gold", new Color(.95f, .55f, .2f));
+            Material moss = MakeMaterial("Moss", new Color(.14f, .31f, .24f));
 
             for (int i = 0; i < 18; i++)
             {
@@ -35,9 +38,35 @@ namespace Recreated.Editor
                 pillar.name = "Mire — ruin marker " + (i + 1);
                 pillar.transform.position = new Vector3(Mathf.Cos(angle) * 16, .8f, Mathf.Sin(angle) * 16);
                 pillar.transform.localScale = new Vector3(.65f, .8f + (i % 3) * .3f, .65f);
-                pillar.GetComponent<Renderer>().sharedMaterial = MakeMaterial("Ruins Stone", new Color(.26f, .34f, .36f));
+                pillar.GetComponent<Renderer>().sharedMaterial = stone;
+                pillar.transform.rotation = Quaternion.Euler(0, i * 19, (i % 3 - 1) * 7);
+                if (i % 3 == 0)
+                {
+                    GameObject lantern = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                    lantern.name = "Mire — lantern " + i;
+                    lantern.transform.position = pillar.transform.position + Vector3.up * (1.6f + (i % 3) * .6f);
+                    lantern.transform.localScale = Vector3.one * .36f;
+                    lantern.GetComponent<Renderer>().sharedMaterial = ember;
+                    Object.DestroyImmediate(lantern.GetComponent<SphereCollider>());
+                    Light glow = lantern.AddComponent<Light>();
+                    glow.type = LightType.Point;
+                    glow.range = 5f;
+                    glow.intensity = 1.4f;
+                    glow.color = new Color(1f, .57f, .26f);
+                }
             }
 
+            for (int i = 0; i < 24; i++)
+            {
+                float angle = i * 2.399963f;
+                float radius = 4f + (i % 6) * 2.2f;
+                GameObject tuft = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                tuft.name = "Mire — moss cluster " + i;
+                tuft.transform.position = new Vector3(Mathf.Cos(angle) * radius, .06f, Mathf.Sin(angle) * radius);
+                tuft.transform.localScale = new Vector3(.65f + (i % 3) * .2f, .06f, .65f);
+                tuft.GetComponent<Renderer>().sharedMaterial = moss;
+                Object.DestroyImmediate(tuft.GetComponent<CapsuleCollider>());
+            }
             GameObject player = GameObject.CreatePrimitive(PrimitiveType.Capsule);
             player.name = "Weaver — playable";
             player.transform.position = new Vector3(0, 1, 0);
@@ -53,6 +82,20 @@ namespace Recreated.Editor
             visor.transform.localScale = new Vector3(.65f, .12f, .1f);
             Object.DestroyImmediate(visor.GetComponent<BoxCollider>());
             visor.GetComponent<Renderer>().sharedMaterial = MakeMaterial("Visor Gold", new Color(.95f, .76f, .4f));
+            GameObject mantle = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            mantle.name = "Weaver — midnight mantle";
+            mantle.transform.SetParent(player.transform, false);
+            mantle.transform.localPosition = new Vector3(0, -.15f, -.34f);
+            mantle.transform.localScale = new Vector3(.94f, 1.28f, .22f);
+            Object.DestroyImmediate(mantle.GetComponent<BoxCollider>());
+            mantle.GetComponent<Renderer>().sharedMaterial = MakeMaterial("Mantle Indigo", new Color(.13f, .16f, .29f));
+            GameObject blade = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            blade.name = "Weaver — gilded blade";
+            blade.transform.SetParent(player.transform, false);
+            blade.transform.localPosition = new Vector3(.62f, -.12f, .48f);
+            blade.transform.localScale = new Vector3(.14f, .14f, 1.4f);
+            Object.DestroyImmediate(blade.GetComponent<BoxCollider>());
+            blade.GetComponent<Renderer>().sharedMaterial = MakeMaterial("Blade Steel", new Color(.72f, .81f, .86f));
 
             GameObject cameraObject = new GameObject("Camera — 2.5D orthographic");
             Camera camera = cameraObject.AddComponent<Camera>();

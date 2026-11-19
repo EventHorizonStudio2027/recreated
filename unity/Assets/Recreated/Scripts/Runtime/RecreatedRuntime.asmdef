@@ -1,7 +1,9 @@
 {
   "name": "Recreated.Runtime",
   "rootNamespace": "Recreated",
-  "references": [],
+  "references": [
+    "Unity.InputSystem"
+  ],
   "includePlatforms": [],
   "excludePlatforms": [],
   "allowUnsafeCode": false,

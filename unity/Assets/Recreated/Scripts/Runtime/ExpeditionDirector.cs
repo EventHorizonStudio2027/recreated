@@ -64,7 +64,21 @@ namespace Recreated
                 obj.transform.position = position;
                 obj.transform.localScale = new Vector3(.9f, .9f, .9f);
                 Renderer renderer = obj.GetComponent<Renderer>();
-                renderer.material.color = new Color(.44f, .29f, .62f);
+                renderer.material.color = new Color(.27f, .18f, .39f);
+                GameObject hood = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                hood.name = "Shade — hood";
+                hood.transform.SetParent(obj.transform, false);
+                hood.transform.localPosition = new Vector3(0, .65f, .06f);
+                hood.transform.localScale = new Vector3(.88f, .55f, .8f);
+                Destroy(hood.GetComponent<SphereCollider>());
+                hood.GetComponent<Renderer>().material.color = new Color(.14f, .11f, .22f);
+                GameObject eyes = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                eyes.name = "Shade — luminous eyes";
+                eyes.transform.SetParent(obj.transform, false);
+                eyes.transform.localPosition = new Vector3(0, .65f, .45f);
+                eyes.transform.localScale = new Vector3(.38f, .07f, .05f);
+                Destroy(eyes.GetComponent<BoxCollider>());
+                eyes.GetComponent<Renderer>().material.color = new Color(.79f, .58f, 1f);
                 EnemyController enemy = obj.AddComponent<EnemyController>();
                 enemy.target = player.transform;
                 enemy.tuning = tuning;
@@ -76,16 +90,18 @@ namespace Recreated
             if (player == null) return;
             GUIStyle title = new GUIStyle(GUI.skin.label) { fontSize = 20, fontStyle = FontStyle.Bold };
             title.normal.textColor = new Color(.98f, .85f, .64f);
-            GUI.Box(new Rect(14, 14, 344, 140), "");
+            float width = Mathf.Min(344, Screen.width - 28);
+            float content = Mathf.Max(180, width - 32);
+            GUI.Box(new Rect(14, 14, width, 140), "");
             GUI.color = new Color(.13f, .17f, .23f);
-            GUI.DrawTexture(new Rect(26, 55, 312, 4), Texture2D.whiteTexture);
+            GUI.DrawTexture(new Rect(26, 55, content, 4), Texture2D.whiteTexture);
             GUI.color = new Color(.93f, .75f, .48f);
-            GUI.DrawTexture(new Rect(26, 55, 312 * Mathf.Clamp01(player.Vitality.Current / player.Vitality.Maximum), 4), Texture2D.whiteTexture);
+            GUI.DrawTexture(new Rect(26, 55, content * Mathf.Clamp01(player.Vitality.Current / player.Vitality.Maximum), 4), Texture2D.whiteTexture);
             GUI.color = Color.white;
-            GUI.Label(new Rect(26, 20, 300, 30), "RECREATED  /  THE MIRE", title);
-            GUI.Label(new Rect(26, 64, 300, 22), "HEALTH   " + Mathf.CeilToInt(player.Vitality.Current) + " / " + player.Vitality.Maximum);
-            GUI.Label(new Rect(26, 90, 320, 22), finished ? "EXPEDITION CLEARED" : nextWaveAt >= 0f ? "NEXT CHAMBER IN " + Mathf.CeilToInt(nextWaveAt - Time.time) + "s" : "CHAMBER " + CurrentWave + " / " + tuning.wavesPerExpedition + "   •   THREATS " + enemies.Count);
-            GUI.Label(new Rect(26, 117, 320, 20), "WASD MOVE  •  CLICK ATTACK  •  Q PULSE  •  SHIFT DODGE");
+            GUI.Label(new Rect(26, 20, content, 30), "RECREATED  /  THE MIRE", title);
+            GUI.Label(new Rect(26, 64, content, 22), "HEALTH   " + Mathf.CeilToInt(player.Vitality.Current) + " / " + player.Vitality.Maximum);
+            GUI.Label(new Rect(26, 90, content, 22), finished ? "EXPEDITION CLEARED" : nextWaveAt >= 0f ? "NEXT CHAMBER IN " + Mathf.CeilToInt(nextWaveAt - Time.time) + "s" : "CHAMBER " + CurrentWave + " / " + tuning.wavesPerExpedition + "   •   THREATS " + enemies.Count);
+            GUI.Label(new Rect(26, 117, content, 20), "WASD MOVE  •  CLICK ATTACK  •  Q PULSE  •  SHIFT DODGE");
             if ((finished || player.Vitality.IsDead) && GUI.Button(new Rect(14, 164, 180, 38), "RESTART EXPEDITION")) Restart();
         }
     }
