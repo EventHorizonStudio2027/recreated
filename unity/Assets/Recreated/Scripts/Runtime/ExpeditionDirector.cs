@@ -100,8 +100,7 @@ namespace Recreated
                 EnemyController enemy = obj.AddComponent<EnemyController>();
                 obj.AddComponent<DamageFlash>();
                 obj.AddComponent<EnemyWindupVisual>();
-                enemy.target = player.transform;
-                enemy.tuning = tuning;
+                enemy.Configure(player.transform, tuning);
                 enemies.Add(enemy);
             }
         }
