@@ -9,12 +9,16 @@ namespace Recreated
         public GameTuning tuning = new GameTuning();
         public Health Vitality { get; private set; }
         private float nextStrike;
+        private float strafeSign;
+        private float orbitOffset;
         private float windupEnds = -1f;
         public bool IsWindingUp => windupEnds >= 0f;
         private void Awake()
         {
             tuning.Validate();
             Vitality = GetComponent<Health>();
+            strafeSign = (GetInstanceID() & 1) == 0 ? 1f : -1f;
+            orbitOffset = Mathf.Abs(GetInstanceID() % 7) * .31f;
             Vitality.Configure(tuning.enemyHealth);
             Vitality.Died += _ => Destroy(gameObject);
         }
@@ -27,7 +31,10 @@ namespace Recreated
             {
                 windupEnds = -1f;
                 Vector3 direction = delta.normalized;
-                transform.position += direction * tuning.enemySpeed * Time.deltaTime;
+                Vector3 tangent = new Vector3(-direction.z, 0, direction.x) * strafeSign;
+                float orbit = Mathf.Sin(Time.time * 1.7f + orbitOffset) * .35f;
+                Vector3 pursuit = (direction + tangent * orbit).normalized;
+                transform.position += pursuit * tuning.enemySpeed * Time.deltaTime;
                 transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(direction), Time.deltaTime * 9f);
             }
             else if (windupEnds >= 0f)

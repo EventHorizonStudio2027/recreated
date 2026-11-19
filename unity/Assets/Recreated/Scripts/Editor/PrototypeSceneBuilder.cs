@@ -97,6 +97,8 @@ namespace Recreated.Editor
             blade.transform.localScale = new Vector3(.14f, .14f, 1.4f);
             Object.DestroyImmediate(blade.GetComponent<BoxCollider>());
             blade.GetComponent<Renderer>().sharedMaterial = MakeMaterial("Blade Steel", new Color(.72f, .81f, .86f));
+            player.AddComponent<WeaverCombatVisual>();
+            player.AddComponent<EchoPulseVisual>();
 
             GameObject cameraObject = new GameObject("Camera — 2.5D orthographic");
             Camera camera = cameraObject.AddComponent<Camera>();

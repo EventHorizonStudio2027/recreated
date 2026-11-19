@@ -112,7 +112,7 @@ namespace Recreated
             title.normal.textColor = new Color(.98f, .85f, .64f);
             float width = Mathf.Min(344, Screen.width - 28);
             float content = Mathf.Max(180, width - 32);
-            GUI.Box(new Rect(14, 14, width, 168), "");
+            GUI.Box(new Rect(14, 14, width, 184), "");
             GUI.color = new Color(.13f, .17f, .23f);
             GUI.DrawTexture(new Rect(26, 55, content, 4), Texture2D.whiteTexture);
             GUI.color = new Color(.93f, .75f, .48f);
@@ -122,8 +122,19 @@ namespace Recreated
             GUI.Label(new Rect(26, 64, content, 22), "HEALTH   " + Mathf.CeilToInt(player.Vitality.Current) + " / " + player.Vitality.Maximum);
             GUI.Label(new Rect(26, 90, content, 22), finished ? "EXPEDITION CLEARED" : nextWaveAt >= 0f ? "NEXT CHAMBER IN " + Mathf.CeilToInt(nextWaveAt - Time.time) + "s" : "CHAMBER " + CurrentWave + " / " + tuning.wavesPerExpedition + "   •   THREATS " + enemies.Count);
             GUI.Label(new Rect(26, 117, content, 20), "ECHOES " + (progress == null ? 0 : progress.earnedEchoes) + "   •   CLEARS " + (progress == null ? 0 : progress.completedRuns));
-            GUI.Label(new Rect(26, 142, content, 20), "WASD MOVE   CLICK ATTACK   Q PULSE   SHIFT DODGE");
-            if ((finished || player.Vitality.IsDead) && GUI.Button(new Rect(14, 192, 180, 38), "RESTART EXPEDITION")) Restart();
+            float cooldownWidth = Mathf.Min(112f, (content - 12f) * .5f);
+            float pulseReady = Mathf.Clamp01(1f - (player.PulseReadyAt - Time.time) / Mathf.Max(.1f, player.tuning.pulseCooldown));
+            float dodgeReady = Mathf.Clamp01(1f - (player.DodgeReadyAt - Time.time) / Mathf.Max(.1f, player.tuning.dodgeCooldown));
+            GUI.Label(new Rect(26, 140, content, 20), "Q  ECHO PULSE                 SHIFT  DODGE");
+            GUI.color = new Color(.13f, .17f, .23f);
+            GUI.DrawTexture(new Rect(26, 161, cooldownWidth, 5), Texture2D.whiteTexture);
+            GUI.DrawTexture(new Rect(26 + cooldownWidth + 14, 161, cooldownWidth, 5), Texture2D.whiteTexture);
+            GUI.color = new Color(.48f, .81f, 1f);
+            GUI.DrawTexture(new Rect(26, 161, cooldownWidth * pulseReady, 5), Texture2D.whiteTexture);
+            GUI.color = new Color(.93f, .75f, .48f);
+            GUI.DrawTexture(new Rect(26 + cooldownWidth + 14, 161, cooldownWidth * dodgeReady, 5), Texture2D.whiteTexture);
+            GUI.color = Color.white;
+            if ((finished || player.Vitality.IsDead) && GUI.Button(new Rect(14, 210, 180, 38), "RESTART EXPEDITION")) Restart();
         }
     }
 }
