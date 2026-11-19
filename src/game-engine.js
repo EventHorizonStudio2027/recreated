@@ -1,0 +1,235 @@
+
+
+(()=>{'use strict';
+const el=id=>document.getElementById(id),canvas=el('playfield'),ctx=canvas.getContext('2d');let running=false,paused=false,last=0,now=0,frameToken=0,room='hub',keys=new Set(),enemies=[],drops=[],particles=[],player={x:450,y:340,hp:100,max:100,level:1,xp:0,echoes:0,relics:[],facing:0,attackAt:0,dodgeUntil:0,invuln:0},world={version:1,enemyHp:1,storm:false},history=[],telemetry={kills:0,deaths:0,runs:0,casts:0,clears:0},pulseAt=-99999,projectiles=[],cleared=false;const W=900,H=600;let hazardHits=0,roomVisits={mire:0,ruins:0},hazards=[],hazardClock=0,authorPreview=null;let obstacles=[],wave=1,waveCount=3,waveDelayUntil=0,toastUntil=0,heals=3,bossDefeated=false,saveClock=0,shake=0,combo=0,comboUntil=0,damageNumbers=[],runTime=0;
+const saveKey='recreated-playable-v2';const backupKey=saveKey+'-backup';let saveState='Ready';
+function setSaveState(state){saveState=state;const badge=document.getElementById('saveStatus');if(badge){badge.textContent=state;badge.dataset.state=state.toLowerCase().replace(/[^a-z]/g,'')}}
+function isValidSave(data){
+ if(!data||typeof data!=='object'||Array.isArray(data)||!data.player||typeof data.player!=='object'||Array.isArray(data.player)||!data.world||typeof data.world!=='object'||Array.isArray(data.world))return false;
+ const p=data.player,w=data.world;
+ return Number.isInteger(p.level)&&p.level>=1&&p.level<=99&&Number.isFinite(p.max)&&p.max>0&&p.max<=9999&&Number.isFinite(p.hp)&&p.hp>=0&&p.hp<=p.max&&Number.isFinite(p.x)&&p.x>=0&&p.x<=W&&Number.isFinite(p.y)&&p.y>=0&&p.y<=H&&Number.isFinite(p.xp)&&p.xp>=0&&Number.isFinite(p.echoes)&&p.echoes>=0&&Number.isInteger(w.version)&&w.version>=1&&w.version<=999&&[1,1.25].includes(w.enemyHp)&&typeof w.storm==='boolean'&&(!p.relics||(Array.isArray(p.relics)&&p.relics.length<=3&&new Set(p.relics).size===p.relics.length&&p.relics.every(r=>['Ember','Tide','Gale'].includes(r))));
+}
+function save(){try{const payload=JSON.stringify({player,world,history,room,wave,telemetry,heals,bossDefeated,hazardHits,roomVisits});const previous=localStorage.getItem(saveKey);if(previous){try{const parsed=JSON.parse(previous);if(isValidSave(parsed))localStorage.setItem(backupKey,previous)}catch(_){}}localStorage.setItem(saveKey,payload);setSaveState('Saved');return true}catch(e){setSaveState('Save unavailable');return false}}function safeNumber(value,fallback,min,max){const n=Number(value);return Number.isFinite(n)?Math.max(min,Math.min(max,n)):fallback}function load(){try{let d=null;let recovered=false;for(const [key,isBackup] of [[saveKey,false],[backupKey,true]]){try{const candidate=JSON.parse(localStorage.getItem(key)||'null');if(isValidSave(candidate)){d=candidate;recovered=isBackup;break}}catch(_){}}if(isValidSave(d)){player={...player,...d.player};player.level=Math.floor(safeNumber(player.level,1,1,99));player.max=safeNumber(player.max,100,1,9999);player.hp=safeNumber(player.hp,player.max,0,player.max);player.x=safeNumber(player.x,W/2,28,W-28);player.y=safeNumber(player.y,H/2,32,H-30);player.echoes=Math.floor(safeNumber(player.echoes,0,0,1e7));player.xp=safeNumber(player.xp,0,0,1e9);player.facing=safeNumber(player.facing,0,-Math.PI*2,Math.PI*2);player.relics=Array.isArray(player.relics)?player.relics.filter(x=>['Ember','Tide','Gale'].includes(x)).slice(0,3):[];world={...world,...(d.world&&typeof d.world==='object'?d.world:{})};world.storm=!!world.storm;world.enemyHp=[1,1.25].includes(world.enemyHp)?world.enemyHp:1;world.version=Math.floor(safeNumber(world.version,1,1,999));history=Array.isArray(d.history)?d.history.filter(h=>h&&h.before&&Number.isFinite(h.before.version)).slice(-30):[];for(const k of Object.keys(telemetry))telemetry[k]=safeNumber(d.telemetry?.[k],0,0,1e7);room=['hub','mire','ruins'].includes(d.room)?d.room:'hub';wave=room==='hub'?1:Math.max(1,Math.min(waveCount,Number.isInteger(d.wave)?d.wave:1)); /* Resume at chamber start, not mid-combat. */heals=Math.floor(safeNumber(d.heals,3,0,9));bossDefeated=!!d.bossDefeated;hazardHits=safeNumber(d.hazardHits,0,0,1e7);roomVisits={mire:Math.floor(safeNumber(d.roomVisits?.mire,0,0,1e7)),ruins:Math.floor(safeNumber(d.roomVisits?.ruins,0,0,1e7))};setSaveState(recovered?'Backup recovered':'Save loaded');return true}}catch(e){}setSaveState('New journey');return false}
+function manualSave(){const ok=save();message(ok?'Progress saved on this device.':'Unable to save. Check browser storage settings.');return ok}
+function message(t){el('toast').textContent=t;toastUntil=performance.now()+4500}function hud(){el('regionLabel').textContent=({hub:'LOOMHOUSE',mire:'THE MIRE',ruins:'SUNKEN RUINS'})[room];const mood=el('regionMood');if(mood)mood.textContent=({hub:'THE HEART OF THE WEAVE',mire:'WHERE ROOTS REMEMBER',ruins:'ECHOES BENEATH THE TIDE'})[room];el('heroLabel').textContent='WEAVER · LV '+player.level;el('hpFill').style.width=Math.max(0,100*player.hp/player.max)+'%';el('hpText').textContent=Math.ceil(player.hp)+' / '+player.max+' HP';const xpTrack=el('xpFill'),xpLabel=el('xpText');if(xpTrack){const progress=Math.min(100,100*player.xp/(player.level*100));xpTrack.style.width=progress+'%';el('xpTrack')?.setAttribute('aria-valuenow',String(Math.round(progress)))}if(xpLabel)xpLabel.textContent='LEVEL '+player.level+' · '+Math.floor(player.xp)+' / '+player.level*100+' XP';el('gameStats').textContent='Level '+player.level+' · '+player.echoes+' Echoes · '+heals+' Heals · '+(room==='hub'?'Sanctuary':'Chamber '+wave+'/'+waveCount)+' · World v'+world.version;el('relicText').textContent='Relics: '+(player.relics.join(', ')||'none')+' · '+Object.entries(relicSynergy()).filter(([k,v])=>v).map(([k])=>k.toUpperCase()).join(' / ')}
+const rng=(a,b)=>a+Math.random()*(b-a);function enter(next,{resume=false,checkpoint=1}={}){if(!['hub','mire','ruins'].includes(next))return;room=next;wave=resume&&next!=='hub'?Math.max(1,Math.min(waveCount,checkpoint)):1;waveDelayUntil=0;obstacles=chamberCover(next,world.version,wave);runTime=0;combo=0;player.x=450;player.y=360;enemies=[];drops=[];projectiles=[];cleared=false;if(next!=='hub'&&!resume){telemetry.runs++;roomVisits[next]=(roomVisits[next]||0)+1;}hazards=next==='hub'?[]:makeHazards(next,world.version);hazardClock=0;if(next!=='hub'&&resume){spawnNextWave()}else if(next!=='hub'){let n=next==='mire'?6:9;for(let i=0,attempts=0;i<n&&attempts<500;attempts++){let x=rng(100,800),y=rng(100,500);if(Math.hypot(x-player.x,y-player.y)<145||hazards.some(h=>Math.hypot(x-h.x,y-h.y)<h.r+26)||obstacles.some(o=>Math.hypot(x-o.x,y-o.y)<o.r+35)||enemies.some(e=>Math.hypot(x-e.x,y-e.y)<40))continue;enemies.push({x,y,hp:Math.round((next==='mire'?42:60)*world.enemyHp),max:Math.round((next==='mire'?42:60)*world.enemyHp),speed:next==='mire'?43:56,attack:0,type:i%4===0?'wisp':i%4===1?'stalker':'shade',seed:rng(0,7),phase:rng(0,6.28),windup:0});i++}}hud();save();message(resume&&next!=='hub'?'CHECKPOINT RESTORED · '+(next==='mire'?'The Mire':'Sunken Ruins')+' · Chamber '+wave+'/'+waveCount+' restarted.':next==='hub'?'The Loomhouse welcomes you home.':next==='mire'?'The Mire shifts beneath your feet.':'The drowned ruins remember your footsteps.')}
+function showPanel(title,content){el('panelTitle').textContent=title;el('panelContent').innerHTML=content;el('gamePanel').hidden=false}function escapeText(t){return String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function ledger(){let entries=history.slice().reverse().map(h=>'<p><strong>World v'+h.version+'</strong> — '+escapeText(h.note)+'</p>').join('');showPanel('The Ledger','<p>The Author records every approved change. This prototype uses deterministic local rules, not a live AI service.</p>'+ (entries||'<p>The pages are still unwritten.</p>'))}
+// Successive encounter chambers form a three-wave expedition per region.
+// Spawns are bounded and avoid the player, hazards, and existing creatures.
+// Region-specific cover positions are deterministic per world revision and chamber.
+function chamberCover(region,revision,chamber){
+ if(region==='hub')return [];
+ let seed=2166136261;
+ for(const c of region+':'+revision+':'+chamber){seed=Math.imul(seed^c.charCodeAt(0),16777619)>>>0;}
+ const rand=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296};
+ const cover=[];
+ for(let i=0;i<5;i++){
+  const x=105+rand()*690,y=90+rand()*410,r=region==='ruins'?23:28;
+  if(Math.hypot(x-450,y-360)<120||Math.hypot(x-790,y-110)<95||cover.some(o=>Math.hypot(x-o.x,y-o.y)<o.r+r+40))continue;
+  cover.push({x:Math.round(x),y:Math.round(y),r});
+ }
+ return cover;
+}
+function resolveCover(x,y,r){
+ // Iterative projection handles chained overlaps and stays inside arena bounds.
+ for(let pass=0;pass<5;pass++){
+  let moved=false;
+  for(const o of obstacles){
+   const dx=x-o.x,dy=y-o.y,d=Math.hypot(dx,dy),limit=o.r+r+0.5;
+   if(d<limit){const angle=d>0.00001?Math.atan2(dy,dx):((o.x*13+o.y*7)%628)/100;
+    x=o.x+Math.cos(angle)*limit;y=o.y+Math.sin(angle)*limit;moved=true;}
+  }
+  x=Math.max(r,Math.min(W-r,x));y=Math.max(r,Math.min(H-r,y));
+  if(!moved)break;
+ }
+ return {x,y};
+}
+function drawCover(){for(const o of obstacles){circle(o.x+5,o.y+8,o.r+5,'#080b1c99');circle(o.x,o.y,o.r,room==='ruins'?'#49415c':'#40574b');ctx.strokeStyle=room==='ruins'?'#b39dc0':'#9db39c';ctx.lineWidth=3;ctx.beginPath();ctx.arc(o.x,o.y,o.r-5,Math.PI*.1,Math.PI*1.6);ctx.stroke();circle(o.x-7,o.y-7,4,'#d4c0a366')}}
+function spawnNextWave(){
+  const count=(room==='mire'?4:6)+wave;
+  let spawned=0;
+  for(let tries=0;tries<400&&spawned<count;tries++){
+    const x=rng(65,W-65),y=rng(65,H-65);
+    if(Math.hypot(x-player.x,y-player.y)<165||hazards.some(h=>Math.hypot(x-h.x,y-h.y)<h.r+30)||obstacles.some(o=>Math.hypot(x-o.x,y-o.y)<o.r+34)||enemies.some(e=>Math.hypot(x-e.x,y-e.y)<45))continue;
+    const hp=Math.round((room==='mire'?35:52)*world.enemyHp*(1+.14*(wave-1)));
+    const type=(spawned+wave)%4===0?'wisp':(spawned+wave)%4===1?'stalker':'shade';
+    enemies.push({x,y,hp,max:hp,speed:(room==='mire'?43:56)*(1+.06*(wave-1)),attack:0,type,seed:rng(0,7),phase:rng(0,6.28),windup:0});spawned++;
+  }
+  if(room==='ruins'&&wave===waveCount){const hp=Math.round(270*world.enemyHp);const safe=resolveCover(450,125,40);enemies.push({x:safe.x,y:safe.y,hp,max:hp,speed:27,attack:0,type:'warden',seed:1,phase:0,windup:0});spawned++;}
+  message('THREAD '+wave+' / '+waveCount+' · '+spawned+' threats emerge.');
+}
+function codex(){showPanel('The Weave Codex','<p><strong>Hazard hits:</strong> '+hazardHits+' · <strong>Mire visits:</strong> '+roomVisits.mire+' · <strong>Ruins visits:</strong> '+roomVisits.ruins+'</p><p><strong>Expeditions:</strong> '+telemetry.runs+' · <strong>Creatures defeated:</strong> '+telemetry.kills+' · <strong>Fallen threads:</strong> '+telemetry.deaths+' · <strong>Echo pulses:</strong> '+telemetry.casts+' · <strong>Cleared regions:</strong> '+telemetry.clears+'</p><p><strong>Known threats:</strong> Mire Wisp (fast, evasive) · Hollow Shade (relentless pursuit) · Drowned Warden (Sunken Ruins boss)</p><p>The Author observes these aggregate events locally. No telemetry leaves your browser.</p>')}function relics(){showPanel('Echo Relics','<p>Collect echoes dropped by enemies. Every third echo grants a relic.</p><p><strong>Equipped:</strong> '+escapeText(player.relics.join(' · ')||'None')+'</p><p>Ember: stronger attacks · Tide: increased maximum health · Gale: faster movement</p><p><strong>Resonances:</strong> Ember + Tide: Steam (+6 strike / +9 pulse damage) · Ember + Gale: Storm (faster strikes) · Tide + Gale: Current (+12 HP between chambers)</p>')}
+
+function seeded(seed){let n=seed>>>0;return ()=>{n=(Math.imul(1664525,n)+1013904223)>>>0;return n/4294967296}}
+function makeHazards(region,version){const r=seeded(version*917+(region==='mire'?31:79));return Array.from({length:region==='mire'?4:6},(_,i)=>({x:90+r()*720,y:80+r()*420,r:20+r()*14,phase:r()*6.283,period:2.5+r()*1.7,active:false})).filter(h=>Math.hypot(h.x-450,h.y-360)>100)}
+function updateHazards(dt){if(room==='hub'||!hazards.length)return;hazardClock+=dt;for(const h of hazards){const cycle=(hazardClock+h.phase)%h.period;h.active=cycle>h.period*.69;if(h.active&&Math.hypot(player.x-h.x,player.y-h.y)<h.r+12&&now>player.invuln){player.hp=Math.max(0,player.hp-(room==='ruins'?13:8));player.invuln=now+800;hazardHits++;shake=6;hud();message('A shifting hazard struck your thread.');if(player.hp<=0){telemetry.deaths++;player.hp=player.max;enter('hub');message('Your thread was severed by the Weave.');save();return}}}}
+function drawHazards(){if(room==='hub')return;for(const h of hazards){ctx.save();ctx.globalAlpha=h.active?.75:.27;circle(h.x,h.y,h.r,h.active?'#9c4df2':'#68c2aa');ctx.strokeStyle=h.active?'#f0a6ff':'#b8e7d4';ctx.lineWidth=h.active?4:2;ctx.beginPath();ctx.arc(h.x,h.y,h.r+7,0,Math.PI*2);ctx.stroke();ctx.restore()}}
+function authorProposal(){if(telemetry.runs<1)return null;const harder=telemetry.deaths===0&&telemetry.kills>=8;const field=world.storm?'storm':harder?'enemyHp':'storm';const value=field==='storm'?!world.storm:(world.enemyHp===1?1.25:1);return {field,value,risk:'low',reason:harder?'Successful expeditions suggest the Weave can offer greater resistance.':'Expedition patterns suggest changing the region atmosphere.',note:field==='storm'?(value?'The Mire grows restless. A storm gathers over the crossings.':'The storm recedes. The waters quiet.'):value>1?'The creatures have learned to resist your blade.':'The Weave releases its grip on the creatures.'}}
+function inspectAuthor(){const p=authorProposal();showPanel('The Author · Change Review',p?'<p><strong>Proposed adjustment:</strong> '+escapeText(p.field)+' → '+escapeText(p.value)+'</p><p><strong>Reason:</strong> '+escapeText(p.reason)+'</p><p><strong>Risk:</strong> Low · locally simulated demonstration</p><p>Use Author: Evolve to apply this change. Rollback restores the previous version.</p>':'<p>Complete an expedition to provide the Author with gameplay observations.</p>')}
+
+function patch(){if(!running||paused||!el('gamePanel').hidden)return false;let before={...world};const suggestion=authorProposal();if(!suggestion){message('The Author needs more expedition data.');return false;}world={...world,version:world.version+1,[suggestion.field]:suggestion.value};let note=suggestion.note;history.push({version:world.version,note,before});if(room!=='hub')enter(room);save();message('THE AUTHOR: '+note);hud();return true}
+function rollback(){if(!running||paused||!el('gamePanel').hidden)return false;let h=history.pop();if(!h){message('No world revision to restore.');return}world=h.before;if(room!=='hub')enter(room);save();hud();message('The Author restored world version '+world.version+'.');return true}
+// Relic interactions are derived from equipped relics rather than stored in save data.
+function relicSynergy(){const r=player.relics;return {steam:r.includes('Ember')&&r.includes('Tide'),storm:r.includes('Ember')&&r.includes('Gale'),current:r.includes('Tide')&&r.includes('Gale')}}
+// A wall between attacker and target blocks close-range attacks and pulses.
+function clearStrikePath(ax,ay,bx,by){const dx=bx-ax,dy=by-ay,dd=dx*dx+dy*dy;if(dd<.001)return true;for(const o of obstacles){const t=Math.max(0,Math.min(1,((o.x-ax)*dx+(o.y-ay)*dy)/dd));if(Math.hypot(o.x-(ax+t*dx),o.y-(ay+t*dy))<o.r-2)return false}return true}
+// Cover-aware steering chooses a stable side around a blocking stone instead of repeatedly pushing into it.
+function steerAroundCover(ex,ey,tx,ty,radius=22){
+ const dx=tx-ex,dy=ty-ey,dist=Math.hypot(dx,dy)||1;
+ let blocker=null,best=Infinity;
+ for(const o of obstacles){const t=Math.max(0,Math.min(1,((o.x-ex)*dx+(o.y-ey)*dy)/(dist*dist)));
+  const px=ex+t*dx,py=ey+t*dy,sep=Math.hypot(o.x-px,o.y-py);
+  if(t<.98&&sep<o.r+radius+6&&t<best){best=t;blocker=o;}}
+ if(!blocker)return {x:dx/dist,y:dy/dist,blocked:false};
+ const vx=blocker.x-ex,vy=blocker.y-ey,vl=Math.hypot(vx,vy)||1;
+ const cross=vx*dy-vy*dx;
+ const sign=Math.abs(cross)>2?(cross>0?-1:1):((Math.floor(blocker.x+blocker.y)%2)?1:-1);
+ const tangent={x:-vy/vl*sign,y:vx/vl*sign};
+ const sideX=blocker.x+tangent.x*(blocker.r+radius+28),sideY=blocker.y+tangent.y*(blocker.r+radius+28);
+ const wx=sideX-ex,wy=sideY-ey,wl=Math.hypot(wx,wy)||1;
+ return {x:wx/wl,y:wy/wl,blocked:true};
+}
+let lastCombatHit=0;let lastHitCount=0;const reducedCombatMotion=()=>window.matchMedia?.('(prefers-reduced-motion: reduce)').matches===true;
+function attack(){if(!running||paused||!el('gamePanel').hidden||performance.now()-player.attackAt<(relicSynergy().storm?240:310))return;player.attackAt=performance.now();let hit=0;for(const e of enemies){let dx=e.x-player.x,dy=e.y-player.y,dist=Math.hypot(dx,dy),diff=Math.atan2(dy,dx)-player.facing;if(dist<100&&Math.cos(diff)>-.15&&clearStrikePath(player.x,player.y,e.x,e.y)){let damage=player.relics.includes('Ember')?38:27;if(relicSynergy().steam)damage+=6;e.hp-=damage;hit++;damageNumbers.push({x:e.x,y:e.y,n:damage,life:.65});shake=Math.max(shake,reducedCombatMotion()?0:2.5);for(let j=0;j<8;j++)particles.push({x:e.x,y:e.y,vx:rng(-90,90),vy:rng(-90,90),life:.4,color:'#f8bb73'})}}if(hit){lastCombatHit=performance.now();lastHitCount=hit;combo=performance.now()<comboUntil?combo+hit:hit;comboUntil=performance.now()+1900;if(combo>=4)message('THREAD COMBO ×'+combo+' · '+hit+' struck');}}
+function pulse(){if(!running||paused||el('gamePanel').hidden===false||performance.now()-pulseAt<3200)return false;pulseAt=performance.now();telemetry.casts++;projectiles.push({x:player.x,y:player.y,r:12,life:.5});for(const e of enemies){const d=Math.hypot(e.x-player.x,e.y-player.y);if(d<180&&clearStrikePath(player.x,player.y,e.x,e.y)){let damage=player.relics.includes('Ember')?45:31;if(relicSynergy().steam)damage+=9;e.hp-=damage;damageNumbers.push({x:e.x,y:e.y,n:damage,life:.7});shake=reducedCombatMotion()?0:5;lastCombatHit=performance.now();lastHitCount++;e.x+=((e.x-player.x)/(d||1))*32;e.y+=((e.y-player.y)/(d||1))*32;{const safe=resolveCover(e.x,e.y,e.type==='warden'?40:22);e.x=safe.x;e.y=safe.y;}for(let i=0;i<5;i++)particles.push({x:e.x,y:e.y,vx:rng(-75,75),vy:rng(-75,75),life:.45,color:'#d3a5ff'})}}message('ECHO PULSE · The Weave answers.');save();return true}function dodge(){if(!running||paused||!el('gamePanel').hidden)return;if(performance.now()<player.dodgeUntil||performance.now()-player.dodgeUntil<450)return;player.dodgeUntil=performance.now()+220;player.invuln=player.dodgeUntil;player.x=Math.max(35,Math.min(W-35,player.x+Math.cos(player.facing)*75));player.y=Math.max(35,Math.min(H-35,player.y+Math.sin(player.facing)*75));const pos=resolveCover(player.x,player.y,24);player.x=pos.x;player.y=pos.y}
+function gain(amount=1){amount=Math.max(1,Math.min(5,Math.floor(Number(amount)||1)));player.echoes+=amount;player.xp+=20*amount;while(player.xp>=player.level*100){player.xp-=player.level*100;player.level++;player.max+=20;player.hp=player.max;message('LEVEL UP! The Weave strengthens your thread.')}if(player.echoes>=3&&player.relics.length<Math.min(3,Math.floor(player.echoes/3))){let choices=['Ember','Tide','Gale'];let relic=choices.find(r=>!player.relics.includes(r));if(relic){player.relics.push(relic);if(relic==='Tide'){player.max+=35;player.hp+=35}message('ECHO RELIC DISCOVERED: '+relic)}}hud();save()}
+function heal(){if(!running||paused||!el('gamePanel').hidden||heals<=0||player.hp>=player.max)return false;heals--;player.hp=Math.min(player.max,player.hp+45);hud();save();message('Restorative echo: +45 health.');return true}
+function update(dt){if(paused||!el('gamePanel').hidden)return;runTime+=dt;updateHazards(dt);if(room==='hub'&&player.hp<=0)return;shake=Math.max(0,shake-dt*15);damageNumbers=damageNumbers.filter(n=>(n.life-=dt)>0);for(const n of damageNumbers)n.y-=dt*36;let dx=(keys.has('d')||keys.has('arrowright')?1:0)-(keys.has('a')||keys.has('arrowleft')?1:0),dy=(keys.has('s')||keys.has('arrowdown')?1:0)-(keys.has('w')||keys.has('arrowup')?1:0);let mag=Math.hypot(dx,dy);if(mag){dx/=mag;dy/=mag;player.facing=Math.atan2(dy,dx);let sp=player.relics.includes('Gale')?230:185;player.x=Math.max(28,Math.min(W-28,player.x+dx*sp*dt));player.y=Math.max(32,Math.min(H-30,player.y+dy*sp*dt));const pos=resolveCover(player.x,player.y,24);player.x=pos.x;player.y=pos.y}for(const e of enemies){if(e.hp<=0)continue;if(e.type==='warden'&&!e.enraged&&e.hp<=e.max*.5){e.enraged=true;e.speed*=1.3;e.windup=0;e.attack=now+950;message('WARDEN ENRAGED · Its second phase begins!');for(let j=0;j<28;j++){const a=j*Math.PI/14;particles.push({x:e.x,y:e.y,vx:Math.cos(a)*115,vy:Math.sin(a)*115,life:.8,color:'#ffb17e'})}}let x=player.x-e.x,y=player.y-e.y,d=Math.hypot(x,y)||1;if(d>32){let orbit=e.type==='wisp'?Math.sin(now*.002+e.phase)*1.05:e.type==='stalker'?Math.sin(now*.0018+e.phase)*.4:0;const wispEvasion=e.type==='wisp'&&d<155?1.22:1;const stalkerRush=e.type==='stalker'&&d>90&&d<240?1.42:1;const steer=steerAroundCover(e.x,e.y,player.x,player.y,e.type==='warden'?40:22);const ox=steer.blocked?0:orbit;e.x+=(steer.x-ox*y/d)*e.speed*(e.type==='stalker'?stalkerRush:wispEvasion)*dt;e.y+=(steer.y+ox*x/d)*e.speed*(e.type==='stalker'?stalkerRush:wispEvasion)*dt;const pos=resolveCover(e.x,e.y,e.type==='warden'?40:22);e.x=pos.x;e.y=pos.y}if(d<(e.type==='warden'?75:37)&&clearStrikePath(e.x,e.y,player.x,player.y)&&now>e.attack&&e.windup===0){e.windup=now+ (e.type==='warden'?(e.enraged?580:850):e.type==='stalker'?340:480);e.attack=e.windup+650}if(e.windup&&now>=e.windup){e.windup=0;if(Math.hypot(player.x-e.x,player.y-e.y)<(e.type==='warden'?95:45)&&clearStrikePath(e.x,e.y,player.x,player.y)&&now>player.invuln){player.hp=Math.max(0,player.hp-(e.type==='warden'?(e.enraged?34:27):world.storm?15:10));player.invuln=now+550;shake=reducedCombatMotion()?0:9;hud();if(player.hp<=0){telemetry.deaths++;player.hp=player.max;player.echoes=Math.max(0,player.echoes-1);enter('hub');message('Your thread was severed. The Loomhouse restored you.');save();return}}}}let survivors=[];for(const e of enemies){if(e.hp<=0){telemetry.kills++;if(e.type==='warden'){bossDefeated=true;heals=Math.min(9,heals+2);gain(2);rewardBanner('WARDEN VANQUISHED','+2 HEALS · +2 ECHOES · TROPHY UNLOCKED');message('THE DROWNED WARDEN FALLS · Trophy claimed.')}drops.push({x:e.x,y:e.y,t:now});for(let j=0;j<12;j++)particles.push({x:e.x,y:e.y,vx:rng(-80,80),vy:rng(-80,80),life:.6,color:'#a76cff'})}else survivors.push(e)}enemies=survivors;drops=drops.filter(d=>{let dist=Math.hypot(d.x-player.x,d.y-player.y);if(dist<35||(now-d.t>12000)){gain();return false}if(dist<140&&dist>1){d.x+=(player.x-d.x)/dist*dt*115;d.y+=(player.y-d.y)/dist*dt*115}return true});projectiles=projectiles.filter(p=>(p.life-=dt)>0);for(const p of projectiles)p.r+=dt*400;particles=particles.filter(p=>(p.life-=dt)>0);for(const p of particles){p.x+=p.vx*dt;p.y+=p.vy*dt}saveClock+=dt;if(saveClock>8){saveClock=0;save()}if(room!=='hub'&&!cleared&&enemies.length===0&&drops.length===0&&wave<waveCount){
+  if(!waveDelayUntil){waveDelayUntil=now+1250;message('CHAMBER '+wave+' SURVIVED · The next thread gathers.');}
+  if(now>=waveDelayUntil){const rewardHp=Math.min(player.max-player.hp,Math.round(player.max*.12)+(relicSynergy().current?12:0));player.hp=Math.min(player.max,player.hp+rewardHp);if(wave===2){heals=Math.min(9,heals+1);rewardBanner('CHAMBER SURVIVED','+'+rewardHp+' HP · +1 HEAL')}else rewardBanner('CHAMBER SURVIVED','+'+rewardHp+' HP');wave++;waveDelayUntil=0;obstacles=chamberCover(room,world.version,wave);{const safe=resolveCover(player.x,player.y,24);player.x=safe.x;player.y=safe.y;}spawnNextWave();hud();}
+}
+if(room!=='hub'&&!cleared&&wave===waveCount&&enemies.length===0&&drops.length===0){cleared=true;telemetry.clears++;lastClear=now;rewardBanner('EXPEDITION CLEARED','PORTAL OPEN · '+(room==='ruins'?'RETURN TO LOOMHOUSE':'ENTER SUNKEN RUINS'));save();message('EXPEDITION CLEARED · All three chambers survived. The passage opens.')}if(cleared&&room!=='hub'&&now>portalCooldown&&Math.hypot(player.x-790,player.y-110)<48){portalCooldown=now+1800;const destination=room==='mire'?'ruins':'hub';enter(destination);message(destination==='hub'?'The Weave returns you to the Loomhouse.':'The next thread opens.');}if(toastUntil&&performance.now()>toastUntil){el('toast').textContent='WASD move · Space attack · Q pulse · Shift dodge · E hub';toastUntil=0}}
+let lastClear=0,portalCooldown=0;function circle(x,y,r,fill){ctx.fillStyle=fill;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill()}function line(x,y,xx,yy,col,width){ctx.strokeStyle=col;ctx.lineWidth=width;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(xx,yy);ctx.stroke()}
+function drawTerrain(){
+ const ruins=room==='ruins',t=now*.0003;
+ ctx.save();
+ // Receding causeway and flooded basins with subtly moving reflections.
+ ctx.fillStyle=ruins?'#141a2d':'#0d2427';ctx.beginPath();ctx.ellipse(450,320,380,225,0,0,Math.PI*2);ctx.fill();
+ for(let i=0;i<8;i++){let x=70+i*105,y=90+(i%3)*160;ctx.fillStyle=ruins?'#353044':'#28463e';ctx.beginPath();ctx.ellipse(x,y,64,32,.15,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#d4b27b20';ctx.lineWidth=2;ctx.stroke();}
+ ctx.fillStyle=ruins?'#373344':'#3a413e';ctx.beginPath();ctx.moveTo(360,-20);ctx.lineTo(555,-20);ctx.lineTo(585,620);ctx.lineTo(315,620);ctx.closePath();ctx.fill();
+ for(let i=0;i<12;i++){let y=i*56-20;ctx.strokeStyle='#090d19a0';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(340-(y/600)*26,y);ctx.lineTo(565+(y/600)*24,y+5);ctx.stroke();}
+ for(let i=0;i<14;i++){let x=(i*137+80)%900,y=(i*197+25)%600;ctx.strokeStyle=ruins?'#8f80c338':'#8ed0ac32';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x,y,20+Math.sin(t+i)*5,4,0,0,Math.PI*2);ctx.stroke();}
+ for(let i=0;i<19;i++){let x=(i*89+17)%900,y=(i*167+67)%600;let glow=.35+.25*Math.sin(t*3+i);circle(x,y,2.3,ruins?'rgba(187,153,255,'+glow+')':'rgba(152,240,184,'+glow+')');}
+ ctx.restore();}
+
+function drawWorldAtmosphere(){
+ const reduced=reducedCombatMotion(),t=reduced?0:now*.00045;
+ ctx.save();
+ const shade=ctx.createRadialGradient(450,300,120,450,300,560);
+ shade.addColorStop(0,'#00000000');shade.addColorStop(1,room==='hub'?'#08061285':'#050a1688');
+ ctx.fillStyle=shade;ctx.fillRect(0,0,W,H);
+ const count=room==='hub'?18:room==='mire'?24:17;
+ for(let i=0;i<count;i++){
+  const x=(i*137+73)%W,y=(i*197+43)%H;
+  const drift=reduced?0:Math.sin(t*(i%3+1)+i)*9;
+  const alpha=reduced?.15:.12+.11*(.5+.5*Math.sin(t*2+i));
+  circle(x+drift,y+(reduced?0:Math.cos(t+i)*5),room==='hub'?1.8:2.5,room==='ruins'?'rgba(167,145,255,'+alpha+')':room==='mire'?'rgba(147,235,187,'+alpha+')':'rgba(244,200,133,'+alpha+')');
+ }
+ ctx.restore();
+}
+function drawRegionLandmarks(){
+ if(room==='hub')return;
+ ctx.save();
+ const ruins=room==='ruins';
+ for(let i=0;i<6;i++){
+  const x=64+i*151,y=i%2?526:70;
+  ctx.fillStyle=ruins?'#181b30':'#102c2b';
+  ctx.beginPath();ctx.ellipse(x,y+9,28,11,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle=ruins?'#4b4666':'#304c3d';ctx.fillRect(x-12,y-30,24,37);
+  ctx.strokeStyle=ruins?'#9e8eb57a':'#88b58a6b';ctx.lineWidth=2;ctx.strokeRect(x-12,y-30,24,37);
+  if(ruins){ctx.beginPath();ctx.arc(x,y-30,12,Math.PI,Math.PI*2);ctx.stroke()}
+  else{ctx.beginPath();ctx.moveTo(x-15,y-25);ctx.lineTo(x,y-49);ctx.lineTo(x+15,y-25);ctx.stroke()}
+ }
+ ctx.restore();
+}
+function drawLoomhouseDetails(){
+ ctx.save();const t=reducedCombatMotion()?0:now*.001;
+ for(let i=0;i<12;i++){
+  const a=i*Math.PI/6,x=450+Math.cos(a)*155,y=270+Math.sin(a)*155;
+  ctx.strokeStyle='#b18b586b';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(450+Math.cos(a)*132,270+Math.sin(a)*132);ctx.lineTo(x,y);ctx.stroke();
+  circle(x,y,5,i%3===0?'#d8bb79':'#7c728f');
+ }
+ const halo=ctx.createRadialGradient(450,270,42,450,270,165);
+ halo.addColorStop(0,'#f7ce7b25');halo.addColorStop(1,'#f7ce7b00');
+ ctx.fillStyle=halo;ctx.beginPath();ctx.arc(450,270,165,0,Math.PI*2);ctx.fill();
+ ctx.strokeStyle='#d3ae7599';ctx.lineWidth=2;
+ for(let i=0;i<3;i++){ctx.beginPath();ctx.arc(450,270,73+i*16,t*(i%2?-.2:.2),Math.PI*1.55+t*(i%2?-.2:.2));ctx.stroke()}
+ ctx.restore();
+}
+
+
+
+function drawEnemySilhouette(e,bob){
+ const warden=e.type==='warden',wisp=e.type==='wisp',stalker=e.type==='stalker',r=warden?40:wisp?19:22;
+ ctx.save();ctx.translate(e.x,e.y+bob);
+ ctx.fillStyle='#050a14aa';ctx.beginPath();ctx.ellipse(4,13,r*.85,r*.34,0,0,Math.PI*2);ctx.fill();
+ if(wisp){
+  const glow=ctx.createRadialGradient(0,0,2,0,0,28);glow.addColorStop(0,'#ead9ffdd');glow.addColorStop(.5,'#9d6bea88');glow.addColorStop(1,'#a568ff00');
+  ctx.fillStyle=glow;ctx.beginPath();ctx.arc(0,0,28,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#6e4ba7';ctx.beginPath();ctx.moveTo(-16,7);ctx.quadraticCurveTo(-21,-16,0,-20);ctx.quadraticCurveTo(20,-14,17,8);ctx.quadraticCurveTo(8,19,0,12);ctx.quadraticCurveTo(-11,21,-16,7);ctx.fill();
+  ctx.strokeStyle='#d3b4ff';ctx.lineWidth=2;ctx.stroke();
+ }else if(warden){
+  ctx.fillStyle=e.enraged?'#853e45':'#594257';ctx.beginPath();ctx.moveTo(-35,29);ctx.lineTo(-30,-18);ctx.lineTo(-14,-34);ctx.lineTo(13,-34);ctx.lineTo(32,-16);ctx.lineTo(37,30);ctx.closePath();ctx.fill();
+  ctx.strokeStyle=e.enraged?'#ff9976':'#c3a77b';ctx.lineWidth=4;ctx.stroke();
+  ctx.fillStyle='#26273a';ctx.fillRect(-25,-22,50,30);
+  ctx.strokeStyle='#d3b77d';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(-33,-18);ctx.lineTo(-43,-38);ctx.lineTo(-23,-31);ctx.moveTo(33,-18);ctx.lineTo(43,-38);ctx.lineTo(23,-31);ctx.stroke();
+  ctx.fillStyle='#d2a56e';ctx.fillRect(-5,-35,10,48);
+ }else{
+  ctx.fillStyle=stalker?'#653448':'#42325c';ctx.beginPath();ctx.moveTo(-21,18);ctx.lineTo(-17,-12);ctx.lineTo(0,-26);ctx.lineTo(17,-12);ctx.lineTo(21,18);ctx.lineTo(0,9);ctx.closePath();ctx.fill();
+  ctx.strokeStyle=stalker?'#d68a9b':'#a78ac7';ctx.lineWidth=2;ctx.stroke();
+  if(stalker){ctx.strokeStyle='#e0a3a9';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(-18,5);ctx.lineTo(-32,17);ctx.moveTo(18,5);ctx.lineTo(32,17);ctx.stroke()}
+ }
+ ctx.fillStyle=warden?'#ffd2a2':wisp?'#fff4df':stalker?'#ffb2a4':'#d4b4ff';
+ ctx.fillRect(-9,-5,6,4);ctx.fillRect(3,-5,6,4);
+ ctx.restore();
+}
+
+function drawWeaverAvatar(){
+ const reduced=reducedCombatMotion(),strike=now-player.attackAt<170,invulnerable=now<player.invuln;
+ ctx.save();
+ // Ground shadow keeps the character anchored in the top-down environment.
+ ctx.fillStyle='#04071288';ctx.beginPath();ctx.ellipse(player.x+4,player.y+13,26,11,0,0,Math.PI*2);ctx.fill();
+ ctx.translate(player.x,player.y);ctx.rotate(player.facing);
+ const aura=ctx.createRadialGradient(0,0,8,0,0,38);
+ aura.addColorStop(0,invulnerable?'#b2edff48':'#f6c47735');aura.addColorStop(1,'#00000000');
+ ctx.fillStyle=aura;ctx.beginPath();ctx.arc(0,0,38,0,Math.PI*2);ctx.fill();
+ // Layered cloak, armoured shoulders, hood and luminous visor.
+ ctx.fillStyle='#151d32';ctx.beginPath();ctx.moveTo(-25,-18);ctx.lineTo(17,-16);ctx.lineTo(27,0);ctx.lineTo(14,23);ctx.lineTo(-26,17);ctx.closePath();ctx.fill();
+ ctx.strokeStyle=invulnerable?'#a6e5ff':'#ba986d';ctx.lineWidth=2.5;ctx.stroke();
+ ctx.fillStyle='#40556a';ctx.beginPath();ctx.ellipse(-7,0,18,17,0,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle='#9b855f';ctx.fillRect(-12,-17,7,34);
+ ctx.fillStyle='#27344b';ctx.beginPath();ctx.moveTo(2,-14);ctx.lineTo(17,-8);ctx.lineTo(19,8);ctx.lineTo(2,14);ctx.closePath();ctx.fill();
+ ctx.strokeStyle='#d9b879';ctx.lineWidth=2;ctx.stroke();
+ circle(2,0,10,'#0b1425');circle(7,-3,3,invulnerable?'#a8edff':'#d4f4db');
+ // Weapon silhouette points along movement / attack facing.
+ ctx.strokeStyle='#e5ecf7';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(14,0);ctx.lineTo(38,0);ctx.stroke();
+ ctx.strokeStyle='#e0b875';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(18,-9);ctx.lineTo(18,9);ctx.stroke();
+ if(strike){ctx.strokeStyle='#ffd889';ctx.lineWidth=8;ctx.beginPath();ctx.arc(0,0,66,-.9,.9);ctx.stroke();
+  if(!reduced){ctx.strokeStyle='#fff2c499';ctx.lineWidth=3;ctx.beginPath();ctx.arc(0,0,78,-.55,.55);ctx.stroke()}}
+ ctx.restore();
+}
+
+function render(){let cw=canvas.width,ch=canvas.height;ctx.setTransform(cw/W,0,0,ch/H,0,0);ctx.save();ctx.translate(reducedCombatMotion()?0:Math.sin(now*.07)*shake,reducedCombatMotion()?0:Math.cos(now*.09)*shake);let g=ctx.createLinearGradient(0,0,W,H);if(room==='hub'){g.addColorStop(0,'#191326');g.addColorStop(1,'#30233b')}else{g.addColorStop(0,world.storm?'#101328':'#102327');g.addColorStop(1,room==='ruins'?'#2a203d':'#23352c')}ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+for(let x=0;x<W;x+=60)for(let y=0;y<H;y+=60){ctx.strokeStyle=room==='hub'?'#b9923a13':'#6ea7990c';ctx.strokeRect(x,y,60,60)}for(let i=0;i<55;i++){let x=(i*173+37)%W,y=(i*97+41)%H;circle(x,y,room==='hub'?2:3,room==='hub'?'#c69b6750':'#6caa8a50')}
+drawWorldAtmosphere();if(room==='hub'){ctx.strokeStyle='#a77b4b';ctx.lineWidth=5;ctx.strokeRect(110,90,680,420);circle(450,270,125,'#292036');ctx.strokeStyle='#cba15b';ctx.lineWidth=4;ctx.beginPath();ctx.arc(450,270,118,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#d9b776';ctx.font='28px Georgia';ctx.textAlign='center';ctx.fillText('THE LOOMHOUSE',450,135);ctx.font='17px Georgia';ctx.fillText('Sanctuary of the Weave',450,170);ctx.font='15px system-ui';ctx.fillText('Enter the Mire using the button below',450,465);for(let i=0;i<8;i++){let a=i*Math.PI/4;circle(450+Math.cos(a)*115,270+Math.sin(a)*115,7,'#f2bf76')}drawLoomhouseDetails()}else{drawTerrain();drawRegionLandmarks();drawCover();drawHazards();if(cleared){let pulse=.5+.5*Math.sin(now*.004);circle(790,110,36,'rgba(168,107,240,'+(.22+.2*pulse)+')');ctx.strokeStyle='#f4d18a';ctx.lineWidth=4;ctx.beginPath();ctx.arc(790,110,29,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#f7db9c';ctx.font='bold 12px system-ui';ctx.textAlign='center';ctx.fillText(room==='mire'?'TO RUINS':'TO HUB',790,163)}for(let i=0;i<14;i++){let x=(i*147+77)%W,y=(i*223+39)%H;circle(x,y,18,'#213a32');circle(x+7,y-5,10,'#39574c')}if(world.storm){ctx.fillStyle='#bca7ff10';ctx.fillRect(0,0,W,H);for(let i=0;i<38;i++){let x=(i*59+now*.09)%W,y=(i*109+now*.24)%H;line(x,y,x-15,y+26,'#b8b2ef4b',1)}}for(const d of drops){circle(d.x,d.y,12,'#f0c36b50');circle(d.x,d.y,7,'#ffe19b')}for(const p of projectiles){ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.strokeStyle='#caa0ff'+Math.max(0,Math.min(255,Math.round(p.life*400))).toString(16).padStart(2,'0');ctx.lineWidth=5;ctx.stroke()}for(const e of enemies){let bob=Math.sin(now*.003+e.seed)*3;drawEnemySilhouette(e,bob);if(e.windup){const duration=e.type==='warden'?(e.enraged?580:850):e.type==='stalker'?340:480;const remaining=Math.max(0,e.windup-now);const progress=Math.max(0,Math.min(1,1-remaining/duration));const radius=e.type==='warden'?85:45;ctx.strokeStyle='#ff756666';ctx.lineWidth=3;ctx.beginPath();ctx.arc(e.x,e.y,radius,0,Math.PI*2);ctx.stroke();ctx.strokeStyle=e.type==='warden'?'#ffb66c':'#ff6f80';ctx.lineWidth=e.type==='warden'?7:5;ctx.beginPath();ctx.arc(e.x,e.y,radius,-Math.PI/2,-Math.PI/2+progress*Math.PI*2);ctx.stroke();ctx.save();ctx.translate(e.x,e.y);ctx.rotate(Math.atan2(player.y-e.y,player.x-e.x));ctx.strokeStyle='#ffba8e';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(radius+4,-12);ctx.lineTo(radius+19,0);ctx.lineTo(radius+4,12);ctx.stroke();ctx.restore()}circle(e.x-5,e.y-4+bob,3,'#ffe6a2');circle(e.x+5,e.y-4+bob,3,'#ffe6a2');ctx.fillStyle='#180e1e';ctx.fillRect(e.x-(e.type==='warden'?45:22),e.y-(e.type==='warden'?57:34),e.type==='warden'?90:44,5);ctx.fillStyle='#db6e7e';ctx.fillRect(e.x-(e.type==='warden'?45:22),e.y-(e.type==='warden'?57:34),(e.type==='warden'?90:44)*Math.max(0,e.hp/e.max),5)}}
+drawWeaverAvatar();if(now-lastCombatHit<360&&lastHitCount>0){ctx.save();ctx.globalAlpha=Math.max(0,1-(now-lastCombatHit)/360);ctx.fillStyle='#f6d49a';ctx.font='bold 17px Georgia';ctx.textAlign='center';ctx.fillText('HIT ×'+lastHitCount,player.x,player.y-42);ctx.restore()}for(const p of particles)circle(p.x,p.y,3,p.color);for(const n of damageNumbers){ctx.globalAlpha=Math.min(1,n.life*2);ctx.fillStyle='#ffe0a1';ctx.font='bold 19px system-ui';ctx.textAlign='center';ctx.fillText(String(n.n),n.x,n.y);ctx.globalAlpha=1}if(combo>1&&now<comboUntil){ctx.fillStyle='#f5c67d';ctx.font='bold 22px Georgia';ctx.textAlign='right';ctx.fillText('THREAD ×'+combo,865,50)}if(paused){ctx.fillStyle='#080711ba';ctx.fillRect(0,0,W,H);ctx.fillStyle='#ffe3b5';ctx.font='42px Georgia';ctx.textAlign='center';ctx.fillText('PAUSED',450,300)}ctx.restore()}
+let rewardBannerUntil=0;function rewardBanner(title,detail){const node=el('rewardBanner');if(!node)return;node.textContent=title+'  ·  '+detail;node.hidden=false;rewardBannerUntil=performance.now()+3400}function updateRewardBanner(){const node=el('rewardBanner');if(node&&!node.hidden&&performance.now()>rewardBannerUntil)node.hidden=true}
+function updateCombatReadout(){const threat=el('threatReadout'),healButton=el('usePotion'),dodge=el('dodgeReadout');if(threat){const remaining=enemies.filter(e=>e.hp>0).length;threat.textContent=room==='hub'?'SAFE HAVEN':remaining+' '+(remaining===1?'THREAT':'THREATS')+' REMAINING';threat.dataset.danger=String(remaining>0&&room!=='hub')}if(healButton){const available=heals>0&&player.hp<player.max;healButton.disabled=!available;healButton.title=available?'Restore up to 45 health ('+heals+' left)':heals===0?'No healing charges remaining':'Health is already full';healButton.setAttribute('aria-label','Heal · '+heals+' charges · '+(available?'ready':heals===0?'empty':'full health'))}if(dodge){const remaining=Math.max(0,player.dodgeUntil+450-now);dodge.textContent=remaining===0?'DODGE READY':'DODGE '+(remaining/1000).toFixed(1)+'s';dodge.dataset.ready=String(remaining===0)}const readout=el('combatReadout');const chamber=el('chamberReadout');if(chamber){const waiting=room!=='hub'&&waveDelayUntil>now;const warden=enemies.find(e=>e.type==='warden');chamber.textContent=room==='hub'?'SANCTUARY':waiting?'NEXT CHAMBER IN '+Math.max(0,(waveDelayUntil-now)/1000).toFixed(1)+'s':warden?(warden.enraged?'WARDEN · PHASE II':'WARDEN · PHASE I'):'CHAMBER '+wave+'/'+waveCount;chamber.dataset.phase=warden?.enraged?'two':'normal'}if(!readout)return;const remaining=Math.max(0,3200-(now-pulseAt));const ready=remaining===0;const danger=room!=='hub'&&enemies.some(e=>e.windup&&e.windup>now);readout.textContent=(ready?'ECHO PULSE READY':'ECHO PULSE '+(remaining/1000).toFixed(1)+'s')+(danger?'  ·  INCOMING ATTACK':'');readout.dataset.ready=String(ready);readout.dataset.danger=String(danger)}
+function frame(t,token){if(!running||token!==frameToken)return;now=t;updateCombatReadout();updateRewardBanner();let dt=Math.min(.035,(t-last)/1000||0);last=t;update(dt);render();requestAnimationFrame(t=>frame(t,token))}function resize(){let rect=canvas.getBoundingClientRect(),d=Math.min(window.devicePixelRatio||1,2);canvas.width=Math.max(1,Math.floor(rect.width*d));canvas.height=Math.max(1,Math.floor(rect.height*d))}window.addEventListener('resize',()=>{if(running)resize()});function start(fresh=false){if(fresh){hazardHits=0;roomVisits={mire:0,ruins:0};hazards=[];hazardClock=0;portalCooldown=0;player={x:450,y:340,hp:100,max:100,level:1,xp:0,echoes:0,relics:[],facing:0,attackAt:0,dodgeUntil:0,invuln:0};world={version:1,enemyHp:1,storm:false};history=[];telemetry={kills:0,deaths:0,runs:0,casts:0,clears:0};heals=3;bossDefeated=false;room='hub'}else load();const resume=!fresh&&room!=='hub',checkpoint=wave;el('gameLayer').classList.add('active');running=true;paused=false;el('pauseGame').textContent='Pause';enter(room,{resume,checkpoint});resize();last=performance.now();const token=++frameToken;requestAnimationFrame(t=>frame(t,token));canvas.focus()}
+function stop(){running=false;frameToken++;keys.clear();save();el('gameLayer').classList.remove('active');if(typeof setThread==='function')setThread();refreshJourneyButtons()}
+el('returnTitle').onclick=stop;el('pauseGame').onclick=()=>{paused=!paused;el('pauseGame').textContent=paused?'Resume':'Pause'};el('goHub').onclick=()=>enter('hub');el('goMire').onclick=()=>enter('mire');el('goRuins').onclick=()=>enter('ruins');el('showLedger').onclick=ledger;el('showRelics').onclick=relics;el('showCodex').onclick=codex;el('castPulse').onclick=pulse;el('usePotion').onclick=heal;el('mobileHeal').addEventListener('pointerdown',e=>{e.preventDefault();heal()});el('mobileSpell').addEventListener('pointerdown',e=>{e.preventDefault();pulse()});el('mobileDodge').addEventListener('pointerdown',e=>{e.preventDefault();dodge()});el('authorPatch').onclick=patch;el('undoPatch').onclick=rollback;el('closeGamePanel').onclick=()=>el('gamePanel').hidden=true;el('mobileAttack').addEventListener('pointerdown',e=>{e.preventDefault();attack()});document.querySelectorAll('[data-dir]').forEach(b=>{let k=b.dataset.dir.toLowerCase();b.addEventListener('pointerdown',e=>{e.preventDefault();keys.add(k);b.setPointerCapture(e.pointerId)});for(let ev of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(ev,()=>keys.delete(k))});
+window.addEventListener('keydown',e=>{if(!running||!el('gamePanel').hidden)return;let k=e.key.toLowerCase();if([' ','arrowup','arrowdown','arrowleft','arrowright'].includes(k))e.preventDefault();keys.add(k);if(k===' ')attack();if(k==='shift')dodge();if(k==='q')pulse();if(k==='h')heal();if(k==='escape'){paused=!paused;el('pauseGame').textContent=paused?'Resume':'Pause'}if(k==='e'&&!paused)enter('hub')});window.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));window.addEventListener('blur',()=>keys.clear());canvas.addEventListener('pointerdown',e=>{let r=canvas.getBoundingClientRect(),x=(e.clientX-r.left)/r.width*W,y=(e.clientY-r.top)/r.height*H;player.facing=Math.atan2(y-player.y,x-player.x);attack()});
+// Replace the title-screen placeholder actions with real gameplay entry points.
+function getExistingJourney(){for(const key of [saveKey,backupKey]){try{const raw=localStorage.getItem(key);if(raw){const data=JSON.parse(raw);if(isValidSave(data))return {key,raw,data}}}catch(_){}}return null}
+function refreshJourneyButtons(){const existing=getExistingJourney(),button=el('continue'),newButton=el('new');button.disabled=!existing;button.style.opacity=existing?'1':'.45';button.title=existing?(existing.key===backupKey?'Recover your last valid backup':'Resume your saved journey'):'No saved journey yet';newButton.title=existing?'Starts over; your current journey will be archived':'Begin a new journey';newButton.textContent=existing?'Start New Journey':'Enter the Weave';const hint=el('journeyHint');if(hint){const region=existing?.data?.room;const checkpoint=region==='mire'||region==='ruins'?(region==='mire'?'THE MIRE':'SUNKEN RUINS')+' · CHAMBER '+Math.max(1,Math.min(3,Number.isInteger(existing.data.wave)?existing.data.wave:1))+'/3':null;hint.textContent=existing?(existing.key===backupKey?'BACKUP READY · ':'JOURNEY SAVED · ')+(checkpoint||'LOOMHOUSE'):'YOUR STORY IS NEVER FINAL'}return existing}
+el('new').onclick=()=>{const existing=refreshJourneyButtons();if(existing){const accepted=window.confirm('Start a new journey? Your current progress will be archived in this browser, but the active save will be replaced. Export a copy first if you want a permanent backup.');if(!accepted)return;try{localStorage.setItem(saveKey+'-previous-journey',existing.raw)}catch(e){window.alert('Could not archive your current journey. Export your save before starting over.');return}}start(true);refreshJourneyButtons()};
+el('continue').onclick=()=>{if(refreshJourneyButtons())start(false)};
+refreshJourneyButtons();
+el('inspectAuthor').onclick=inspectAuthor;
+window.RecreatedDebug={authorProposal,makeHazards,chamberCover,getHazards:()=>hazards.map(h=>({...h})),getState:()=>({room,rewardBanner:el('rewardBanner')?.textContent||'',wardenPhase:enemies.find(e=>e.type==='warden')?.enraged?'two':enemies.some(e=>e.type==='warden')?'one':null,player:{...player},world:{...world},telemetry:{...telemetry},enemyCount:enemies.length,obstacles:obstacles.map(o=>({...o})),coverClearance:Math.min(Infinity,...obstacles.map(o=>Math.hypot(player.x-o.x,player.y-o.y)-o.r-24)),enemyTypes:enemies.map(e=>e.type),dropCount:drops.length,wave,waveCount,waveDelayUntil,heals,bossDefeated,combo,runTime,cleared,hazardHits,roomVisits:{...roomVisits}}),patch,rollback,enter,start,stop,pulse,attack,dodge,heal};
+
+if(window.__RECREATED_E2E__===true){Object.assign(window.RecreatedDebug,{grantEcho:gain,getSynergy:relicSynergy,hasLineOfSight:clearStrikePath,forceFinalWave:()=>{if(room!=='ruins')return false;wave=waveCount;spawnNextWave();return true},setWardenHealthFraction:f=>{const e=enemies.find(e=>e.type==='warden');if(!e||!Number.isFinite(f))return false;e.hp=e.max*Math.max(.05,Math.min(1,f));return true},clearEnemiesForTest:()=>{for(const e of enemies)e.hp=0;return enemies.length},clearDropsForTest:()=>{drops=[];return true},setPlayerHealthFractionForTest:f=>{if(!Number.isFinite(f))return false;player.hp=player.max*Math.max(.1,Math.min(1,f));hud();return true}})}
+const saveNowButton=el('saveNow');if(saveNowButton)saveNowButton.addEventListener('click',manualSave);
+})();
+
