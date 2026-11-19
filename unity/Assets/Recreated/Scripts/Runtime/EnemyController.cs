@@ -9,6 +9,8 @@ namespace Recreated
         public GameTuning tuning = new GameTuning();
         public Health Vitality { get; private set; }
         private float nextStrike;
+        private float windupEnds = -1f;
+        public bool IsWindingUp => windupEnds >= 0f;
         private void Awake()
         {
             tuning.Validate();
@@ -23,16 +25,23 @@ namespace Recreated
             delta.y = 0;
             if (delta.sqrMagnitude > 2.25f)
             {
+                windupEnds = -1f;
                 Vector3 direction = delta.normalized;
                 transform.position += direction * tuning.enemySpeed * Time.deltaTime;
                 transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(direction), Time.deltaTime * 9f);
             }
-            else if (Time.time >= nextStrike)
+            else if (windupEnds >= 0f)
             {
+                if (Time.time < windupEnds) return;
+                windupEnds = -1f;
                 nextStrike = Time.time + tuning.enemyAttackCooldown;
                 Health player = target.GetComponent<Health>();
                 PlayerController controller = target.GetComponent<PlayerController>();
                 if (player != null && (controller == null || controller.CanTakeDamage)) player.Damage(tuning.enemyDamage);
+            }
+            else if (Time.time >= nextStrike)
+            {
+                windupEnds = Time.time + .42f;
             }
         }
     }
