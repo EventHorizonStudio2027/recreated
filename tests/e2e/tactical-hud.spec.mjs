@@ -17,7 +17,7 @@ test('threat count updates when entering an expedition',async({page})=>{
 });
 test('healing button communicates availability and disables at full health',async({page})=>{
  const heal=page.locator('#usePotion');await expect(heal).toBeDisabled();
- await page.evaluate(()=>window.RecreatedDebug.setPlayerHealthFractionForTest(.5));
+ await page.evaluate(()=>window.RecreatedDebug.setPlayerHealthFractionForTest(.6));
  await expect(heal).toBeEnabled();
  await expect(heal).toHaveAttribute('aria-label',/3 charges/);
  await heal.click();
