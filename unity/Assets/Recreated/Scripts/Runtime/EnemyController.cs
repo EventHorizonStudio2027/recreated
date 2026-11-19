@@ -31,7 +31,8 @@ namespace Recreated
             {
                 nextStrike = Time.time + tuning.enemyAttackCooldown;
                 Health player = target.GetComponent<Health>();
-                if (player != null) player.Damage(tuning.enemyDamage);
+                PlayerController controller = target.GetComponent<PlayerController>();
+                if (player != null && (controller == null || controller.CanTakeDamage)) player.Damage(tuning.enemyDamage);
             }
         }
     }
