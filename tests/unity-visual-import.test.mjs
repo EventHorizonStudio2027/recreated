@@ -21,6 +21,6 @@ test('enemies have distinct hoods and emissive-looking eyes without colliders',(
 });
 test('HUD adapts to viewport width instead of overflowing',()=>{
  const s=read('Scripts/Runtime/ExpeditionDirector.cs');
- assert.match(s,/Mathf\\.Min\\(344f, Screen\\.width - 28f\\)/);
- assert.match(s,/Mathf\\.Min\\(344f, Screen\\.width - 28f\\)/);
+ assert.match(s,/Mathf\.Min\(344f, Screen\.width - 28f\)/);
+ assert.match(s,/Mathf\.Min\(344f, Screen\.width - 28f\)/);
 });
