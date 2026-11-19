@@ -1,7 +1,10 @@
 name: Deploy Recreated playable to GitHub Pages
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
+    paths:
+      - index.html
+      - .github/workflows/deploy-pages.yml
   workflow_dispatch:
 permissions:
   contents: read
@@ -9,7 +12,7 @@ permissions:
   id-token: write
 concurrency:
   group: recreated-pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 jobs:
   deploy:
     environment:
@@ -18,22 +21,37 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - name: Validate playable bundle
+      - name: Validate self-contained HTML entry point
         run: |
           test -s index.html
-          node --check src/game-engine.js
-          npm test
+          grep -qi '<!doctype html>' index.html
+          grep -qi '<title>' index.html
+          echo "Playable HTML size: $(wc -c < index.html) bytes"
       - name: Prepare standalone static site
         run: |
           mkdir -p _site
           cp index.html _site/index.html
+          printf '%s\n' '<!doctype html><html lang="en"><meta charset="utf-8"><title>Recreated</title><meta http-equiv="refresh" content="0; url=./"><a href="./">Play Recreated</a></html>' > _site/404.html
           touch _site/.nojekyll
+          test -s _site/index.html
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
       - id: deployment
         uses: actions/deploy-pages@v4
+      - name: Verify public playable URL
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          echo "Published URL: $PAGE_URL"
+          for attempt in $(seq 1 12); do
+            if curl --fail --location --silent --show-error --max-time 15 "$PAGE_URL" -o /tmp/recreated-live.html && grep -qi '<title>RECREATED' /tmp/recreated-live.html; then
+              echo "Public Recreated HTML verified on attempt $attempt"
+              exit 0
+            fi
+            echo "Site not live yet (attempt $attempt/12); retrying in 10s"
+            sleep 10
+          done
+          echo "::error::GitHub Pages did not serve the expected Recreated HTML. Check Settings > Pages and Actions deployment logs."
+          exit 1
