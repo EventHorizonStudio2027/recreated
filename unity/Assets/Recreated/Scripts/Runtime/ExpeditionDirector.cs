@@ -110,8 +110,8 @@ namespace Recreated
             if (player == null) return;
             GUIStyle title = new GUIStyle(GUI.skin.label) { fontSize = 20, fontStyle = FontStyle.Bold };
             title.normal.textColor = new Color(.98f, .85f, .64f);
-            float width = Mathf.Min(344, Screen.width - 28);
-            float content = Mathf.Max(180, width - 32);
+            float width = Mathf.Max(100f, Mathf.Min(344f, Screen.width - 28f));
+            float content = Mathf.Max(1f, width - 32f);
             GUI.Box(new Rect(14, 14, width, 184), "");
             GUI.color = new Color(.13f, .17f, .23f);
             GUI.DrawTexture(new Rect(26, 55, content, 4), Texture2D.whiteTexture);
@@ -122,10 +122,10 @@ namespace Recreated
             GUI.Label(new Rect(26, 64, content, 22), "HEALTH   " + Mathf.CeilToInt(player.Vitality.Current) + " / " + player.Vitality.Maximum);
             GUI.Label(new Rect(26, 90, content, 22), finished ? "EXPEDITION CLEARED" : nextWaveAt >= 0f ? "NEXT CHAMBER IN " + Mathf.CeilToInt(nextWaveAt - Time.time) + "s" : "CHAMBER " + CurrentWave + " / " + tuning.wavesPerExpedition + "   •   THREATS " + enemies.Count);
             GUI.Label(new Rect(26, 117, content, 20), "ECHOES " + (progress == null ? 0 : progress.earnedEchoes) + "   •   CLEARS " + (progress == null ? 0 : progress.completedRuns));
-            float cooldownWidth = Mathf.Min(112f, (content - 12f) * .5f);
+            float cooldownWidth = Mathf.Max(1f, Mathf.Min(112f, (content - 14f) * .5f));
             float pulseReady = Mathf.Clamp01(1f - (player.PulseReadyAt - Time.time) / Mathf.Max(.1f, player.tuning.pulseCooldown));
             float dodgeReady = Mathf.Clamp01(1f - (player.DodgeReadyAt - Time.time) / Mathf.Max(.1f, player.tuning.dodgeCooldown));
-            GUI.Label(new Rect(26, 140, content, 20), "Q  ECHO PULSE                 SHIFT  DODGE");
+            GUI.Label(new Rect(26, 140, content, 20), width < 280f ? "Q PULSE     SHIFT DODGE" : "Q  ECHO PULSE                 SHIFT  DODGE");
             GUI.color = new Color(.13f, .17f, .23f);
             GUI.DrawTexture(new Rect(26, 161, cooldownWidth, 5), Texture2D.whiteTexture);
             GUI.DrawTexture(new Rect(26 + cooldownWidth + 14, 161, cooldownWidth, 5), Texture2D.whiteTexture);
