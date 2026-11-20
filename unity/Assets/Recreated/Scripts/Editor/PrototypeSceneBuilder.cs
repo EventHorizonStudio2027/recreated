@@ -74,6 +74,13 @@ namespace Recreated.Editor
             echoAltar.transform.localScale = new Vector3(1.65f, .45f, 1.65f);
             echoAltar.GetComponent<Renderer>().sharedMaterial = altar;
             Object.DestroyImmediate(echoAltar.GetComponent<CapsuleCollider>());
+            GameObject altarLight = new GameObject("Mire — altar violet radiance");
+            altarLight.transform.position = echoAltar.transform.position + Vector3.up * 1.2f;
+            Light violet = altarLight.AddComponent<Light>();
+            violet.type = LightType.Point;
+            violet.color = new Color(.68f, .43f, 1f);
+            violet.range = 8f;
+            violet.intensity = 1.6f;
 
             for (int i = 0; i < 18; i++)
             {
