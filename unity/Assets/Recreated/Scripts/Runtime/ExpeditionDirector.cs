@@ -61,14 +61,22 @@ namespace Recreated
         }
         public void Restart()
         {
-            foreach (EnemyController enemy in enemies) if (enemy != null) Destroy(enemy.gameObject);
+            // Destroy is deferred until end of frame; disable actors immediately.
+            foreach (EnemyController enemy in enemies)
+            {
+                if (enemy == null) continue;
+                enemy.enabled = false;
+                Collider body = enemy.GetComponent<Collider>();
+                if (body != null) body.enabled = false;
+                Destroy(enemy.gameObject);
+            }
             enemies.Clear();
             CurrentWave = 0;
             finished = false;
             defeatRecorded = false;
             nextWaveAt = -1f;
             if (player != null) player.ResetForExpedition(new Vector3(0f, 1f, 0f));
-            SpawnWave();
+            if (player != null) SpawnWave();
         }
         private void SpawnWave()
         {
@@ -111,7 +119,11 @@ namespace Recreated
             title.normal.textColor = new Color(.98f, .85f, .64f);
             float width = Mathf.Max(100f, Mathf.Min(344f, Screen.width - 28f));
             float content = Mathf.Max(1f, width - 32f);
-            GUI.Box(new Rect(14, 14, width, 184), "");
+            GUI.color = new Color(.035f, .055f, .09f, .9f);
+            GUI.DrawTexture(new Rect(14, 14, width, 184), Texture2D.whiteTexture);
+            GUI.color = new Color(.78f, .60f, .35f, .9f);
+            GUI.DrawTexture(new Rect(14, 14, 3f, 184), Texture2D.whiteTexture);
+            GUI.color = Color.white;
             GUI.color = new Color(.13f, .17f, .23f);
             GUI.DrawTexture(new Rect(26, 55, content, 4), Texture2D.whiteTexture);
             GUI.color = new Color(.93f, .75f, .48f);
@@ -132,6 +144,9 @@ namespace Recreated
             GUI.DrawTexture(new Rect(26, 161, cooldownWidth * pulseReady, 5), Texture2D.whiteTexture);
             GUI.color = new Color(.93f, .75f, .48f);
             GUI.DrawTexture(new Rect(26 + cooldownWidth + 14, 161, cooldownWidth * dodgeReady, 5), Texture2D.whiteTexture);
+            // Final visual detail: a restrained violet separator ties the HUD to the Echo Altar.
+            GUI.color = new Color(.58f, .38f, .85f, .7f);
+            GUI.DrawTexture(new Rect(26, 176, content, 1f), Texture2D.whiteTexture);
             GUI.color = Color.white;
             if (finished || player.Vitality.IsDead)
             {

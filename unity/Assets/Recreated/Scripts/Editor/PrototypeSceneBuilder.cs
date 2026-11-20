@@ -18,7 +18,28 @@ namespace Recreated.Editor
             AssetDatabase.Refresh();
             if (!File.Exists(ScenePath))
                 throw new IOException("Recreated scene generation failed: " + ScenePath);
+            ValidateScene();
             Debug.Log("RECREATED_SCENE_READY: " + ScenePath);
+        }
+
+        [MenuItem("Recreated/Validate Prototype Scene")]
+        public static void ValidateScene()
+        {
+            if (!File.Exists(ScenePath))
+                throw new IOException("Prototype scene missing. Run Recreated > Generate Prototype Scene first.");
+            Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            if (!scene.IsValid() || !scene.isLoaded)
+                throw new System.InvalidOperationException("Prototype scene did not load.");
+            PlayerController player = Object.FindFirstObjectByType<PlayerController>();
+            ExpeditionDirector director = Object.FindFirstObjectByType<ExpeditionDirector>();
+            FollowCamera follow = Object.FindFirstObjectByType<FollowCamera>();
+            if (player == null || player.GetComponent<CharacterController>() == null)
+                throw new System.InvalidOperationException("Prototype missing a complete Weaver player.");
+            if (director == null || director.player != player)
+                throw new System.InvalidOperationException("Expedition director has no player binding.");
+            if (follow == null || follow.target != player.transform)
+                throw new System.InvalidOperationException("Follow camera has no Weaver target.");
+            Debug.Log("RECREATED_SCENE_VALID: player, director, camera and bindings verified");
         }
 
         [MenuItem("Recreated/Open Prototype Scene")]
@@ -38,7 +59,7 @@ namespace Recreated.Editor
         public static void Generate()
         {
             if (!Directory.Exists("Assets/Recreated/Scenes")) Directory.CreateDirectory("Assets/Recreated/Scenes");
-            if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+            if (!Application.isBatchMode && !EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             GameObject light = new GameObject("Sun — soft directional light");
             Light sun = light.AddComponent<Light>();
