@@ -144,6 +144,9 @@ namespace Recreated
             GUI.DrawTexture(new Rect(26, 161, cooldownWidth * pulseReady, 5), Texture2D.whiteTexture);
             GUI.color = new Color(.93f, .75f, .48f);
             GUI.DrawTexture(new Rect(26 + cooldownWidth + 14, 161, cooldownWidth * dodgeReady, 5), Texture2D.whiteTexture);
+            // Final visual detail: a restrained violet separator ties the HUD to the Echo Altar.
+            GUI.color = new Color(.58f, .38f, .85f, .7f);
+            GUI.DrawTexture(new Rect(26, 176, content, 1f), Texture2D.whiteTexture);
             GUI.color = Color.white;
             if (finished || player.Vitality.IsDead)
             {
