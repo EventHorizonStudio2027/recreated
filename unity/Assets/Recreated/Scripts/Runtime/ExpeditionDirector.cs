@@ -61,14 +61,22 @@ namespace Recreated
         }
         public void Restart()
         {
-            foreach (EnemyController enemy in enemies) if (enemy != null) Destroy(enemy.gameObject);
+            // Destroy is deferred until end of frame; disable actors immediately.
+            foreach (EnemyController enemy in enemies)
+            {
+                if (enemy == null) continue;
+                enemy.enabled = false;
+                Collider body = enemy.GetComponent<Collider>();
+                if (body != null) body.enabled = false;
+                Destroy(enemy.gameObject);
+            }
             enemies.Clear();
             CurrentWave = 0;
             finished = false;
             defeatRecorded = false;
             nextWaveAt = -1f;
             if (player != null) player.ResetForExpedition(new Vector3(0f, 1f, 0f));
-            SpawnWave();
+            if (player != null) SpawnWave();
         }
         private void SpawnWave()
         {
