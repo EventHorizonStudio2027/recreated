@@ -39,17 +39,40 @@ namespace Recreated
             motor.center = Vector3.zero;
             motor.radius = .4f;
         }
+        public void ResetForExpedition(Vector3 spawnPosition)
+        {
+            nextAttack = nextDodge = nextPulse = dodgeEnd = 0f;
+            lastAttackAt = lastPulseAt = -999f;
+            verticalSpeed = 0f;
+            dodgeDirection = Vector3.zero;
+            facing = Vector3.forward;
+            bool wasEnabled = motor.enabled;
+            motor.enabled = false;
+            transform.position = spawnPosition;
+            transform.rotation = Quaternion.identity;
+            motor.enabled = wasEnabled;
+            health.Configure(tuning.playerHealth);
+        }
+
         private void Update()
         {
             if (health.IsDead) return;
             Keyboard keyboard = Keyboard.current;
-            if (keyboard == null) return;
-            float x = (keyboard.dKey.isPressed || keyboard.rightArrowKey.isPressed ? 1f : 0f) - (keyboard.aKey.isPressed || keyboard.leftArrowKey.isPressed ? 1f : 0f);
-            float z = (keyboard.wKey.isPressed || keyboard.upArrowKey.isPressed ? 1f : 0f) - (keyboard.sKey.isPressed || keyboard.downArrowKey.isPressed ? 1f : 0f);
+            Gamepad pad = Gamepad.current;
+            if (keyboard == null && pad == null) return;
+            float x = keyboard == null ? 0f : (keyboard.dKey.isPressed || keyboard.rightArrowKey.isPressed ? 1f : 0f) - (keyboard.aKey.isPressed || keyboard.leftArrowKey.isPressed ? 1f : 0f);
+            float z = keyboard == null ? 0f : (keyboard.wKey.isPressed || keyboard.upArrowKey.isPressed ? 1f : 0f) - (keyboard.sKey.isPressed || keyboard.downArrowKey.isPressed ? 1f : 0f);
+            if (pad != null)
+            {
+                Vector2 stick = pad.leftStick.ReadValue();
+                if (stick.sqrMagnitude > .04f) { x = stick.x; z = stick.y; }
+                Vector2 aimStick = pad.rightStick.ReadValue();
+                if (aimStick.sqrMagnitude > .09f) facing = new Vector3(aimStick.x, 0f, aimStick.y).normalized;
+            }
             Vector3 direction = Vector3.ClampMagnitude(new Vector3(x, 0, z), 1f);
             if (direction.sqrMagnitude > .01f) facing = direction.normalized;
             Camera cam = Camera.main;
-            if (cam != null && Mouse.current != null)
+            if (cam != null && Mouse.current != null && (pad == null || pad.rightStick.ReadValue().sqrMagnitude <= .09f))
             {
                 Ray ray = cam.ScreenPointToRay(Mouse.current.position.ReadValue());
                 Plane floor = new Plane(Vector3.up, Vector3.zero);
@@ -61,7 +84,7 @@ namespace Recreated
                 }
             }
             transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(facing), Time.deltaTime * 16f);
-            if (keyboard.leftShiftKey.wasPressedThisFrame && Time.time >= nextDodge && direction.sqrMagnitude > .01f)
+            if (((keyboard != null && keyboard.leftShiftKey.wasPressedThisFrame) || (pad != null && pad.buttonEast.wasPressedThisFrame)) && Time.time >= nextDodge && direction.sqrMagnitude > .01f)
             {
                 dodgeDirection = direction.normalized;
                 dodgeEnd = Time.time + tuning.dodgeDuration;
@@ -70,13 +93,13 @@ namespace Recreated
             Vector3 velocity = Time.time < dodgeEnd ? dodgeDirection * tuning.dodgeSpeed : direction * tuning.moveSpeed;
             verticalSpeed = motor.isGrounded ? -2f : Mathf.Max(-35f, verticalSpeed + Physics.gravity.y * Time.deltaTime);
             motor.Move((velocity + Vector3.up * verticalSpeed) * Time.deltaTime);
-            if (((Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame) || keyboard.spaceKey.wasPressedThisFrame) && Time.time >= nextAttack)
+            if (((Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame) || (keyboard != null && keyboard.spaceKey.wasPressedThisFrame) || (pad != null && pad.buttonSouth.wasPressedThisFrame)) && Time.time >= nextAttack)
             {
                 nextAttack = Time.time + tuning.attackCooldown;
                 lastAttackAt = Time.time;
                 HitEnemies(tuning.attackRadius, tuning.attackDamage, true);
             }
-            if (keyboard.qKey.wasPressedThisFrame && Time.time >= nextPulse)
+            if (((keyboard != null && keyboard.qKey.wasPressedThisFrame) || (pad != null && pad.rightShoulder.wasPressedThisFrame)) && Time.time >= nextPulse)
             {
                 nextPulse = Time.time + tuning.pulseCooldown;
                 lastPulseAt = Time.time;
