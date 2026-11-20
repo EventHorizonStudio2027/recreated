@@ -70,7 +70,7 @@ namespace Recreated
                 if (aimStick.sqrMagnitude > .09f) facing = new Vector3(aimStick.x, 0f, aimStick.y).normalized;
             }
             Vector3 direction = Vector3.ClampMagnitude(new Vector3(x, 0, z), 1f);
-            if (direction.sqrMagnitude > .01f) facing = direction.normalized;
+            if (direction.sqrMagnitude > .01f && (pad == null || pad.rightStick.ReadValue().sqrMagnitude <= .09f)) facing = direction.normalized;
             Camera cam = Camera.main;
             if (cam != null && Mouse.current != null && (pad == null || pad.rightStick.ReadValue().sqrMagnitude <= .09f))
             {
