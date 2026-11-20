@@ -94,9 +94,10 @@ namespace Recreated
                 }
             }
             transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(facing), Time.deltaTime * 16f);
-            if (((keyboard != null && keyboard.leftShiftKey.wasPressedThisFrame) || (pad != null && pad.buttonEast.wasPressedThisFrame)) && Time.time >= nextDodge && direction.sqrMagnitude > .01f)
+            if (((keyboard != null && keyboard.leftShiftKey.wasPressedThisFrame) || (pad != null && pad.buttonEast.wasPressedThisFrame)) && Time.time >= nextDodge)
             {
-                dodgeDirection = direction.normalized;
+                // Stationary dodge uses facing so controller and keyboard players can evade instantly.
+                dodgeDirection = direction.sqrMagnitude > .01f ? direction.normalized : facing;
                 dodgeEnd = Time.time + tuning.dodgeDuration;
                 nextDodge = Time.time + tuning.dodgeCooldown;
             }
