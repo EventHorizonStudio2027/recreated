@@ -142,7 +142,18 @@ namespace Recreated
             GUI.color = criticalHealth ? Color.Lerp(new Color(1f, .40f, .36f), Color.white, .2f + .2f * Mathf.Sin(Time.time * 5f)) : Color.white;
             GUI.Label(new Rect(26, 64, content, 22), "HEALTH   " + Mathf.CeilToInt(player.Vitality.Current) + " / " + player.Vitality.Maximum);
             GUI.color = Color.white;
-            GUI.Label(new Rect(26, 90, content, 22), finished ? "EXPEDITION CLEARED" : nextWaveAt >= 0f ? "NEXT CHAMBER IN " + Mathf.Max(0, Mathf.CeilToInt(nextWaveAt - Time.time)) + "s" : "CHAMBER " + CurrentWave + " / " + tuning.wavesPerExpedition + "   •   THREATS " + enemies.Count);
+            string chamberStatus = finished ? "EXPEDITION CLEARED" : nextWaveAt >= 0f ? "NEXT CHAMBER IN " + Mathf.Max(0, Mathf.CeilToInt(nextWaveAt - Time.time)) + "s" : "CHAMBER " + CurrentWave + " / " + tuning.wavesPerExpedition + "   •   THREATS " + enemies.Count;
+            GUIStyle statusStyle = new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold };
+            statusStyle.normal.textColor = finished ? new Color(.98f, .81f, .46f) : new Color(.77f, .86f, .91f);
+            if (finished)
+            {
+                // Final polish: a restrained amber completion shimmer, no flashing panel.
+                float shimmer = .5f + .5f * Mathf.Sin(Time.time * 2.2f);
+                GUI.color = new Color(.94f, .69f, .32f, .35f + shimmer * .35f);
+                GUI.DrawTexture(new Rect(26, 109, content * (.25f + shimmer * .35f), 2f), Texture2D.whiteTexture);
+                GUI.color = Color.white;
+            }
+            GUI.Label(new Rect(26, 90, content, 22), chamberStatus, statusStyle);
             GUI.Label(new Rect(26, 117, content, 20), "ECHOES " + (progress == null ? 0 : progress.earnedEchoes) + "   •   CLEARS " + (progress == null ? 0 : progress.completedRuns));
             float cooldownWidth = Mathf.Max(1f, Mathf.Min(112f, (content - 14f) * .5f));
             float pulseReady = Mathf.Clamp01(1f - (player.PulseReadyAt - Time.time) / Mathf.Max(.1f, player.tuning.pulseCooldown));

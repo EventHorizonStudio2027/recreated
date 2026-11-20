@@ -39,6 +39,11 @@ namespace Recreated.Editor
                 throw new System.InvalidOperationException("Expedition director has no player binding.");
             if (follow == null || follow.target != player.transform)
                 throw new System.InvalidOperationException("Follow camera has no Weaver target.");
+            Camera camera = follow.GetComponent<Camera>();
+            if (camera == null || !camera.orthographic || !follow.CompareTag("MainCamera"))
+                throw new System.InvalidOperationException("Prototype camera is not configured as the orthographic MainCamera.");
+            if (Object.FindFirstObjectByType<Light>() == null)
+                throw new System.InvalidOperationException("Prototype has no scene lighting.");
             Debug.Log("RECREATED_SCENE_VALID: player, director, camera and bindings verified");
         }
 
@@ -191,7 +196,12 @@ namespace Recreated.Editor
 
             if (!EditorSceneManager.SaveScene(scene, ScenePath))
                 throw new IOException("Failed to save Recreated prototype scene: " + ScenePath);
-            EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };
+            // Add prototype without deleting other scenes from the user's build configuration.
+            var scenes = new System.Collections.Generic.List<EditorBuildSettingsScene>(EditorBuildSettings.scenes);
+            int existingIndex = scenes.FindIndex(entry => entry.path == ScenePath);
+            if (existingIndex >= 0) scenes[existingIndex] = new EditorBuildSettingsScene(ScenePath, true);
+            else scenes.Insert(0, new EditorBuildSettingsScene(ScenePath, true));
+            EditorBuildSettings.scenes = scenes.ToArray();
             AssetDatabase.SaveAssets();
             Debug.Log("Recreated: generated playable 2.5D prototype at " + ScenePath);
         }
