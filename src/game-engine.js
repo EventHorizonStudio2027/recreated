@@ -212,7 +212,8 @@ function drawWeaverAvatar(){
  const reduced=reducedCombatMotion(),strike=now-player.attackAt<170,invulnerable=now<player.invuln;
  ctx.save();
  // Ground shadow keeps the character anchored in the top-down environment.
- ctx.fillStyle='#04071288';ctx.beginPath();ctx.ellipse(player.x+4,player.y+13,30,12,0,0,Math.PI*2);ctx.fill();\n const shadowGlow=ctx.createRadialGradient(player.x,player.y,9,player.x,player.y,48);shadowGlow.addColorStop(0,now<player.invuln?'#a5e6ff24':'#eac38c1f');shadowGlow.addColorStop(1,'#00000000');ctx.fillStyle=shadowGlow;ctx.beginPath();ctx.arc(player.x,player.y,48,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle='#04071288';ctx.beginPath();ctx.ellipse(player.x+4,player.y+13,30,12,0,0,Math.PI*2);ctx.fill();
+ const shadowGlow=ctx.createRadialGradient(player.x,player.y,9,player.x,player.y,48);shadowGlow.addColorStop(0,now<player.invuln?'#a5e6ff24':'#eac38c1f');shadowGlow.addColorStop(1,'#00000000');ctx.fillStyle=shadowGlow;ctx.beginPath();ctx.arc(player.x,player.y,48,0,Math.PI*2);ctx.fill();
  ctx.translate(player.x,player.y);ctx.rotate(player.facing);
  const aura=ctx.createRadialGradient(0,0,8,0,0,38);
  aura.addColorStop(0,invulnerable?'#b2edff48':'#f6c47735');aura.addColorStop(1,'#00000000');
