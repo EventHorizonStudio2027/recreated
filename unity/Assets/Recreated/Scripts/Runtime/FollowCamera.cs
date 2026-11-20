@@ -21,11 +21,18 @@ namespace Recreated
         private void OnDisable()
         {
             if (trackedHealth != null) trackedHealth.Damaged -= OnTargetDamaged;
+            trackedHealth = null;
         }
         private void OnTargetDamaged(Health source, float amount)
         {
             shakeUntil = Time.time + .18f;
             shakeStrength = Mathf.Clamp(amount * .012f, .05f, .24f);
+        }
+        public void ResetCameraFeedback()
+        {
+            shakeUntil = 0f;
+            shakeStrength = 0f;
+            velocity = Vector3.zero;
         }
         private void LateUpdate()
         {
