@@ -11,8 +11,10 @@ namespace Recreated
         private Health trackedHealth;
         private float shakeUntil;
         private float shakeStrength;
+        private Camera sceneCamera;
         private void OnEnable()
         {
+            sceneCamera = GetComponent<Camera>();
             trackedHealth = target != null ? target.GetComponent<Health>() : null;
             if (trackedHealth != null) trackedHealth.Damaged += OnTargetDamaged;
         }
@@ -33,6 +35,13 @@ namespace Recreated
                 if (trackedHealth != null) trackedHealth.Damaged -= OnTargetDamaged;
                 trackedHealth = target.GetComponent<Health>();
                 if (trackedHealth != null) trackedHealth.Damaged += OnTargetDamaged;
+            }
+            // Preserve useful world framing on narrow displays without cropping combat.
+            if (sceneCamera != null && sceneCamera.orthographic)
+            {
+                float aspect = Mathf.Max(.5f, sceneCamera.aspect);
+                float targetSize = aspect < 1.25f ? Mathf.Clamp(13f * 1.25f / aspect, 13f, 20f) : 13f;
+                sceneCamera.orthographicSize = Mathf.Lerp(sceneCamera.orthographicSize, targetSize, Time.deltaTime * 5f);
             }
             Vector3 desired = target.position + offset;
             if (Time.time < shakeUntil)
