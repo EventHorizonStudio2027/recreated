@@ -38,7 +38,7 @@ namespace Recreated.Editor
         public static void Generate()
         {
             if (!Directory.Exists("Assets/Recreated/Scenes")) Directory.CreateDirectory("Assets/Recreated/Scenes");
-            if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+            if (!Application.isBatchMode && !EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             GameObject light = new GameObject("Sun — soft directional light");
             Light sun = light.AddComponent<Light>();
