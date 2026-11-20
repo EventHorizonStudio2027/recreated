@@ -11,6 +11,29 @@ namespace Recreated.Editor
     {
         private const string ScenePath = "Assets/Recreated/Scenes/Prototype.unity";
 
+        // Unity -batchmode -projectPath unity -executeMethod Recreated.Editor.PrototypeSceneBuilder.GenerateBatch
+        public static void GenerateBatch()
+        {
+            Generate();
+            AssetDatabase.Refresh();
+            if (!File.Exists(ScenePath))
+                throw new IOException("Recreated scene generation failed: " + ScenePath);
+            Debug.Log("RECREATED_SCENE_READY: " + ScenePath);
+        }
+
+        [MenuItem("Recreated/Open Prototype Scene")]
+        public static void OpenPrototype()
+        {
+            if (!File.Exists(ScenePath))
+            {
+                Generate();
+                return;
+            }
+            if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
+                return;
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+        }
+
         [MenuItem("Recreated/Generate Prototype Scene")]
         public static void Generate()
         {
@@ -117,7 +140,8 @@ namespace Recreated.Editor
             ExpeditionDirector expedition = director.AddComponent<ExpeditionDirector>();
             expedition.player = controller;
 
-            EditorSceneManager.SaveScene(scene, ScenePath);
+            if (!EditorSceneManager.SaveScene(scene, ScenePath))
+                throw new IOException("Failed to save Recreated prototype scene: " + ScenePath);
             EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };
             AssetDatabase.SaveAssets();
             Debug.Log("Recreated: generated playable 2.5D prototype at " + ScenePath);
