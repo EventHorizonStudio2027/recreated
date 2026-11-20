@@ -67,7 +67,7 @@ namespace Recreated
             finished = false;
             defeatRecorded = false;
             nextWaveAt = -1f;
-            if (player != null) player.Vitality.Configure(tuning.playerHealth);
+            if (player != null) player.ResetForExpedition(new Vector3(0f, 1f, 0f));
             SpawnWave();
         }
         private void SpawnWave()
@@ -124,7 +124,7 @@ namespace Recreated
             float cooldownWidth = Mathf.Max(1f, Mathf.Min(112f, (content - 14f) * .5f));
             float pulseReady = Mathf.Clamp01(1f - (player.PulseReadyAt - Time.time) / Mathf.Max(.1f, player.tuning.pulseCooldown));
             float dodgeReady = Mathf.Clamp01(1f - (player.DodgeReadyAt - Time.time) / Mathf.Max(.1f, player.tuning.dodgeCooldown));
-            GUI.Label(new Rect(26, 140, content, 20), width < 280f ? "Q PULSE     SHIFT DODGE" : "Q  ECHO PULSE                 SHIFT  DODGE");
+            GUI.Label(new Rect(26, 140, content, 20), width < 280f ? "PULSE  /  DODGE" : "Q / RB  PULSE        SHIFT / B  DODGE");
             GUI.color = new Color(.13f, .17f, .23f);
             GUI.DrawTexture(new Rect(26, 161, cooldownWidth, 5), Texture2D.whiteTexture);
             GUI.DrawTexture(new Rect(26 + cooldownWidth + 14, 161, cooldownWidth, 5), Texture2D.whiteTexture);
