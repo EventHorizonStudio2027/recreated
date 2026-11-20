@@ -10,7 +10,7 @@ namespace Recreated
         public Health Vitality { get; private set; }
         private float nextStrike;
         private float staggerUntil;
-                public bool IsStaggered => Time.time < staggerUntil;
+        public bool IsStaggered => Time.time < staggerUntil;
         private float strafeSign;
         private float orbitOffset;
         private float windupEnds = -1f;
@@ -67,7 +67,11 @@ namespace Recreated
                 nextStrike = Time.time + tuning.enemyAttackCooldown;
                 Health player = targetHealth;
                 PlayerController controller = target.GetComponent<PlayerController>();
-                if (player != null && (controller == null || controller.CanTakeDamage)) player.Damage(tuning.enemyDamage);
+                Vector3 strikeDelta = target.position - transform.position;
+                strikeDelta.y = 0f;
+                // A dodge or knockback during windup must genuinely evade the attack.
+                if (strikeDelta.sqrMagnitude <= 2.25f && player != null && (controller == null || controller.CanTakeDamage))
+                    player.Damage(tuning.enemyDamage);
             }
             else if (Time.time >= nextStrike)
             {
