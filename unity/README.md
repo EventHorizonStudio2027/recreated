@@ -23,3 +23,9 @@ Prototype foundation only: orthographic 2.5D camera, procedural primitive enviro
 
 ## Architecture
 Runtime `Recreated.Runtime` assembly owns reusable gameplay systems. `Recreated.Editor` provides deterministic scene generation. No purchased assets or external SDK are required. Gameplay balance values are defined in `GameTuning` and can be moved into ScriptableObjects later.
+
+## First-play verification and accessibility
+
+Use the [first-play acceptance checklist](../docs/UNITY_FIRST_PLAY.md) before calling this prototype playable. In the Game view, verify both wide and narrow aspect ratios: health, chamber status, action hints, and victory/defeat text should remain readable against the arena. The current HUD includes a dark translucent backing panel, restrained gold/violet accents, a critical-health pulse and an animated completion underline; those **source-level visual improvements still require Editor verification**. Keep text contrast and space efficiency ahead of decorative effects.
+
+**When blocked:** report the first red Console error (full stack trace and file/line), Unity version, and whether it occurred during import, scene generation, or Play Mode. Do not delete the browser game or overwrite unrelated Unity scenes as a troubleshooting shortcut.
