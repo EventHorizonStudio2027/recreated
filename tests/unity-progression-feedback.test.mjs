@@ -27,7 +27,7 @@ test('HUD includes persistent progress and maintains controls',()=>{
  const s=read('Scripts/Runtime/ExpeditionDirector.cs');
  assert.match(s,/ECHOES /);
  assert.match(s,/CLEARS /);
- assert.match(s,/Q  ECHO PULSE/);
+ assert.match(s,/Q \/ RB  PULSE/);
  assert.match(s,/Screen\.width/);
 });
 
