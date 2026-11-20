@@ -38,6 +38,7 @@ namespace Recreated.Editor
         public static void Generate()
         {
             if (!Directory.Exists("Assets/Recreated/Scenes")) Directory.CreateDirectory("Assets/Recreated/Scenes");
+            if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             GameObject light = new GameObject("Sun — soft directional light");
             Light sun = light.AddComponent<Light>();
@@ -53,6 +54,26 @@ namespace Recreated.Editor
             Material stone = MakeMaterial("Ruins Stone", new Color(.26f, .34f, .36f));
             Material ember = MakeMaterial("Ember Gold", new Color(.95f, .55f, .2f));
             Material moss = MakeMaterial("Moss", new Color(.14f, .31f, .24f));
+            Material trail = MakeMaterial("Mire Trail", new Color(.20f, .26f, .23f));
+            Material altar = MakeMaterial("Echo Altar", new Color(.48f, .37f, .63f));
+            // Four visual approach paths guide the eye toward the central arena.
+            for (int i = 0; i < 4; i++)
+            {
+                float angle = i * Mathf.PI * .5f;
+                GameObject path = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                path.name = "Mire — stone approach " + (i + 1);
+                path.transform.position = new Vector3(Mathf.Sin(angle) * 9f, -.015f, Mathf.Cos(angle) * 9f);
+                path.transform.rotation = Quaternion.Euler(0, i * 90f, 0);
+                path.transform.localScale = new Vector3(2.8f, .06f, 10f);
+                path.GetComponent<Renderer>().sharedMaterial = trail;
+                Object.DestroyImmediate(path.GetComponent<BoxCollider>());
+            }
+            GameObject echoAltar = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            echoAltar.name = "Mire — distant echo altar";
+            echoAltar.transform.position = new Vector3(0f, .45f, 15f);
+            echoAltar.transform.localScale = new Vector3(1.65f, .45f, 1.65f);
+            echoAltar.GetComponent<Renderer>().sharedMaterial = altar;
+            Object.DestroyImmediate(echoAltar.GetComponent<CapsuleCollider>());
 
             for (int i = 0; i < 18; i++)
             {
@@ -153,9 +174,16 @@ namespace Recreated.Editor
             if (!Directory.Exists(root)) Directory.CreateDirectory(root);
             string path = root + "/" + name.Replace(' ', '_') + ".mat";
             Material existing = AssetDatabase.LoadAssetAtPath<Material>(path);
-            if (existing != null) return existing;
+            if (existing != null)
+            {
+                existing.color = color;
+                EditorUtility.SetDirty(existing);
+                return existing;
+            }
             Shader shader = Shader.Find("Universal Render Pipeline/Lit");
             if (shader == null) shader = Shader.Find("Standard");
+            if (shader == null) shader = Shader.Find("Unlit/Color");
+            if (shader == null) throw new System.InvalidOperationException("No compatible material shader found.");
             Material material = new Material(shader) { name = name, color = color };
             AssetDatabase.CreateAsset(material, path);
             return material;
