@@ -414,4 +414,34 @@ body{background:radial-gradient(ellipse 90% 60% at 50% -10%,#352147 0%,#100b1b 4
 @media(max-width:900px){.layout{padding:12px 14px 25px}.lower{gap:12px}.hero{height:clamp(230px,42vw,360px)}#gameTop{gap:7px;padding:9px 11px}#gameTop strong{margin-right:auto}#gameTop .regionIdentity{margin-right:0}#gameViewport{border-radius:12px}}
 @media(max-width:640px){.layout{gap:10px}.topline{padding:10px 12px}.hero{height:clamp(205px,62vw,285px);border-radius:15px}.lower{grid-template-columns:1fr;gap:10px}.lower>.side,.lower>.menu{padding:16px;border-radius:14px}.menu{order:1}.side.left{order:2}.side.right{order:3;display:block}#gameLayer{padding:5px;gap:6px}#gameTop{border-radius:10px;min-height:48px;gap:6px}#gameTop strong{font-size:12px}#gameTop #gameStats{font-size:10px}#gameViewport{border-radius:9px}#gameBottom{border-radius:10px;justify-content:flex-start;overflow-x:auto;flex-wrap:nowrap;scroll-snap-type:x mandatory;scrollbar-width:thin}#gameBottom button{flex:0 0 auto;scroll-snap-align:start;min-height:44px}}
 @media(prefers-reduced-motion:reduce){.menu .action{transition:none}.menu .action:hover{transform:none}}
+</style>
+<style id="v26-game-clarity">
+/* Expedition cockpit: game space first, controls second, utilities last. */
+#gameLayer{--hud-gold:#edc98f;--hud-muted:#c5b7c9}
+#gameTop{display:grid;grid-template-columns:auto minmax(130px,1fr) auto auto;align-items:center;gap:8px 12px;max-width:1600px}
+#gameTop>strong{grid-column:1;margin:0;white-space:nowrap}
+#gameTop>.regionIdentity{grid-column:2;margin:0;min-width:0}
+#gameTop>#gameStats{grid-column:3;justify-self:end;white-space:nowrap}
+#gameTop>#saveStatus{grid-column:4;justify-self:end}
+#gameTop>#backupSave,#gameTop>#restoreSave,#gameTop>#saveNow,#gameTop>#controlsHelp,#gameTop>#pauseGame,#gameTop>#returnTitle{grid-row:2;justify-self:stretch}
+#gameTop>#backupSave{grid-column:1}#gameTop>#restoreSave{grid-column:2}#gameTop>#saveNow{grid-column:3}
+#gameTop>#controlsHelp{grid-column:4}#gameTop>#pauseGame{grid-column:5}#gameTop>#returnTitle{grid-column:6}
+#gameTop{grid-template-columns:auto minmax(150px,1fr) auto auto auto auto}
+#gameTop>.regionIdentity{grid-column:2/4}
+#gameTop>#gameStats{grid-column:4/6}
+#gameTop>#saveStatus{grid-column:6}
+#gameTop>#backupSave,#gameTop>#restoreSave,#gameTop>#saveNow,#gameTop>#controlsHelp,#gameTop>#pauseGame,#gameTop>#returnTitle{grid-row:2;min-height:34px}
+#gameTop button{font-size:11px;white-space:nowrap}
+#gameViewport{min-height:320px;isolation:isolate}
+#gameViewport:after{content:'';position:absolute;inset:0;border-radius:inherit;box-shadow:inset 0 0 65px #07050c77,inset 0 0 0 1px #e9c59016;pointer-events:none;z-index:5}
+#gameHud{z-index:6}
+#gameBottom{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;padding:10px}
+#gameBottom button{width:100%;min-width:0;min-height:42px;overflow:hidden;text-overflow:ellipsis}
+#gameBottom #castPulse,#gameBottom #usePotion{min-height:48px}
+#gameBottom>span{grid-column:1/-1;text-align:center;font-size:10px!important;letter-spacing:.045em;padding:2px 0;color:#a89aaf!important}
+#gameTop button:hover,#gameBottom button:hover{filter:brightness(1.13)}
+@media(min-width:1250px){#gameBottom{grid-template-columns:repeat(8,minmax(0,1fr))}}
+@media(max-width:1050px){#gameTop{display:flex;flex-wrap:wrap;gap:7px}#gameTop>.regionIdentity{margin-right:auto}#gameTop>#gameStats{margin-left:auto}#gameTop>#backupSave,#gameTop>#restoreSave{font-size:10px}#gameBottom{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:700px){#gameLayer{padding:5px;gap:6px}#gameTop{padding:8px;gap:5px}#gameTop>strong{font-size:11px}#gameTop>.regionIdentity{max-width:48%}#gameTop>#gameStats{order:3;margin-left:0}#gameTop>#saveStatus{order:4}#gameTop>#backupSave,#gameTop>#restoreSave{display:none}#gameTop>#saveNow,#gameTop>#controlsHelp,#gameTop>#pauseGame,#gameTop>#returnTitle{min-height:34px}#gameViewport{min-height:220px}#gameBottom{display:flex;overflow-x:auto;flex-wrap:nowrap;justify-content:flex-start;scroll-snap-type:x mandatory;gap:7px;padding:8px}#gameBottom button{width:auto;min-width:max-content;flex:0 0 auto;min-height:44px;padding:9px 12px}#gameBottom>span{display:none}}
+@media(max-height:640px) and (min-width:701px){#gameLayer{gap:5px;padding:5px}#gameTop{padding:6px 10px}#gameTop button{min-height:28px}#gameBottom{padding:6px}#gameBottom button{min-height:34px}}
 </style></body></html>
