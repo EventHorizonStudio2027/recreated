@@ -13,8 +13,8 @@ test('Unity supports controller-only gameplay',()=>{
  assert.match(player,/pad.rightShoulder.wasPressedThisFrame/);
 });
 test('aim stick retains priority over movement and mouse',()=>{
- assert.match(player,/direction.sqrMagnitude > .01f && \(pad == null/);
- assert.match(player,/Mouse.current != null && \(pad == null/);
+ assert.match(player,/direction.sqrMagnitude > .01f && Time.unscaledTime - lastAimInputAt > .25f/);
+ assert.match(player,/Mouse.current != null && \(pad == null \|\| Mouse.current.delta.ReadValue\(\).sqrMagnitude > .01f\)/);
 });
 test('expedition restart clears transient combat state and recenters player',()=>{
  assert.match(player,/public void ResetForExpedition\(Vector3 spawnPosition\)/);

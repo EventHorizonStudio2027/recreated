@@ -18,6 +18,7 @@ namespace Recreated
         private float nextPulse;
         private Vector3 dodgeDirection;
         private float verticalSpeed;
+        private float lastAimInputAt = -999f;
         private float lastAttackAt = -999f;
         private float lastPulseAt = -999f;
         public float AttackAnimation01 => Mathf.Clamp01((Time.time - lastAttackAt) / tuning.attackCooldown);
@@ -44,6 +45,7 @@ namespace Recreated
             nextAttack = nextDodge = nextPulse = dodgeEnd = 0f;
             lastAttackAt = lastPulseAt = -999f;
             verticalSpeed = 0f;
+            lastAimInputAt = -999f;
             dodgeDirection = Vector3.zero;
             facing = Vector3.forward;
             bool wasEnabled = motor.enabled;
@@ -67,12 +69,16 @@ namespace Recreated
                 Vector2 stick = pad.leftStick.ReadValue();
                 if (stick.sqrMagnitude > .04f) { x = stick.x; z = stick.y; }
                 Vector2 aimStick = pad.rightStick.ReadValue();
-                if (aimStick.sqrMagnitude > .09f) facing = new Vector3(aimStick.x, 0f, aimStick.y).normalized;
+                if (aimStick.sqrMagnitude > .09f)
+                {
+                    facing = new Vector3(aimStick.x, 0f, aimStick.y).normalized;
+                    lastAimInputAt = Time.unscaledTime;
+                }
             }
             Vector3 direction = Vector3.ClampMagnitude(new Vector3(x, 0, z), 1f);
-            if (direction.sqrMagnitude > .01f && (pad == null || pad.rightStick.ReadValue().sqrMagnitude <= .09f)) facing = direction.normalized;
+            if (direction.sqrMagnitude > .01f && Time.unscaledTime - lastAimInputAt > .25f) facing = direction.normalized;
             Camera cam = Camera.main;
-            if (cam != null && Mouse.current != null && (pad == null || pad.rightStick.ReadValue().sqrMagnitude <= .09f))
+            if (cam != null && Mouse.current != null && (pad == null || Mouse.current.delta.ReadValue().sqrMagnitude > .01f) && (pad == null || pad.rightStick.ReadValue().sqrMagnitude <= .09f))
             {
                 Ray ray = cam.ScreenPointToRay(Mouse.current.position.ReadValue());
                 Plane floor = new Plane(Vector3.up, Vector3.zero);
@@ -80,7 +86,11 @@ namespace Recreated
                 {
                     Vector3 aim = ray.GetPoint(distance) - transform.position;
                     aim.y = 0;
-                    if (aim.sqrMagnitude > .2f) facing = aim.normalized;
+                    if (aim.sqrMagnitude > .2f)
+                    {
+                        facing = aim.normalized;
+                        lastAimInputAt = Time.unscaledTime;
+                    }
                 }
             }
             transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(facing), Time.deltaTime * 16f);

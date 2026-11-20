@@ -75,7 +75,12 @@ namespace Recreated
             finished = false;
             defeatRecorded = false;
             nextWaveAt = -1f;
-            if (player != null) player.ResetForExpedition(new Vector3(0f, 1f, 0f));
+            if (player != null)
+            {
+                player.ResetForExpedition(new Vector3(0f, 1f, 0f));
+                FollowCamera follow = Camera.main != null ? Camera.main.GetComponent<FollowCamera>() : null;
+                if (follow != null) follow.ResetCameraFeedback();
+            }
             if (player != null) SpawnWave();
         }
         private void SpawnWave()
@@ -130,7 +135,13 @@ namespace Recreated
             GUI.DrawTexture(new Rect(26, 55, content * Mathf.Clamp01(player.Vitality.Current / player.Vitality.Maximum), 4), Texture2D.whiteTexture);
             GUI.color = Color.white;
             GUI.Label(new Rect(26, 20, content, 30), "RECREATED  /  THE MIRE", title);
+            GUI.color = new Color(.86f, .68f, .40f, .52f);
+            GUI.DrawTexture(new Rect(26, 50, content, 1f), Texture2D.whiteTexture);
+            GUI.color = Color.white;
+            bool criticalHealth = player.Vitality.Current / Mathf.Max(1f, player.Vitality.Maximum) < .25f;
+            GUI.color = criticalHealth ? Color.Lerp(new Color(1f, .40f, .36f), Color.white, .2f + .2f * Mathf.Sin(Time.time * 5f)) : Color.white;
             GUI.Label(new Rect(26, 64, content, 22), "HEALTH   " + Mathf.CeilToInt(player.Vitality.Current) + " / " + player.Vitality.Maximum);
+            GUI.color = Color.white;
             GUI.Label(new Rect(26, 90, content, 22), finished ? "EXPEDITION CLEARED" : nextWaveAt >= 0f ? "NEXT CHAMBER IN " + Mathf.Max(0, Mathf.CeilToInt(nextWaveAt - Time.time)) + "s" : "CHAMBER " + CurrentWave + " / " + tuning.wavesPerExpedition + "   •   THREATS " + enemies.Count);
             GUI.Label(new Rect(26, 117, content, 20), "ECHOES " + (progress == null ? 0 : progress.earnedEchoes) + "   •   CLEARS " + (progress == null ? 0 : progress.completedRuns));
             float cooldownWidth = Mathf.Max(1f, Mathf.Min(112f, (content - 14f) * .5f));
