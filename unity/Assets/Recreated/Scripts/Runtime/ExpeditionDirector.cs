@@ -119,7 +119,11 @@ namespace Recreated
             title.normal.textColor = new Color(.98f, .85f, .64f);
             float width = Mathf.Max(100f, Mathf.Min(344f, Screen.width - 28f));
             float content = Mathf.Max(1f, width - 32f);
-            GUI.Box(new Rect(14, 14, width, 184), "");
+            GUI.color = new Color(.035f, .055f, .09f, .9f);
+            GUI.DrawTexture(new Rect(14, 14, width, 184), Texture2D.whiteTexture);
+            GUI.color = new Color(.78f, .60f, .35f, .9f);
+            GUI.DrawTexture(new Rect(14, 14, 3f, 184), Texture2D.whiteTexture);
+            GUI.color = Color.white;
             GUI.color = new Color(.13f, .17f, .23f);
             GUI.DrawTexture(new Rect(26, 55, content, 4), Texture2D.whiteTexture);
             GUI.color = new Color(.93f, .75f, .48f);
