@@ -75,7 +75,12 @@ namespace Recreated
             finished = false;
             defeatRecorded = false;
             nextWaveAt = -1f;
-            if (player != null) player.ResetForExpedition(new Vector3(0f, 1f, 0f));
+            if (player != null)
+            {
+                player.ResetForExpedition(new Vector3(0f, 1f, 0f));
+                FollowCamera follow = Camera.main != null ? Camera.main.GetComponent<FollowCamera>() : null;
+                if (follow != null) follow.ResetCameraFeedback();
+            }
             if (player != null) SpawnWave();
         }
         private void SpawnWave()
