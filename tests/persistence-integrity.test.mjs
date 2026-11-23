@@ -31,3 +31,20 @@ test('save validation and recovery remain available',()=>{
  assert.match(html,/for\(const \[key,isBackup\] of \[\[saveKey,false\],\[backupKey,true\]\]\)/);
  assert.match(html,/function manualSave\(\)/);
 });
+
+test('ledger safely renders only validated, escaped entries',()=>{
+ assert.match(html,/const changes=Array\.isArray\(state\.changes\)\?state\.changes:\[\]/);
+ assert.match(html,/escapeText\(c\.date\)/);
+ assert.match(html,/escapeText\(c\.text\)/);
+ assert.match(html,/\.slice\(-100\)/);
+});
+
+test('gameplay hotkeys respect focused controls and pause clears movement',()=>{
+ assert.match(html,/e\.target\?\.closest\?\.\('input,textarea,select,button/);
+ assert.match(html,/if\(k==='escape'&&!e\.repeat\)/);
+ assert.match(html,/paused=!paused;keys\.clear\(\)/);
+});
+
+test('focus loss pauses play rather than allowing unintended movement',()=>{
+ assert.match(html,/window\.addEventListener\('blur',\(\)=>\{keys\.clear\(\);if\(running&&!paused\)/);
+});
