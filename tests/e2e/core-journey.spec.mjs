@@ -16,7 +16,7 @@ test('new journey, pause, panel navigation, save and continue', async ({page}) =
   await page.locator('#showLedger').click();
   await expect(page.locator('#gamePanel')).toBeVisible();
   await expect(page.locator('#closeGamePanel')).toBeFocused();
-  await page.locator('#closeGamePanel').click();
+  await page.keyboard.press('Escape');
   await expect(page.locator('#gamePanel')).toBeHidden();
   await page.locator('#returnTitle').click();
   await expect(page.locator('#continue')).toBeEnabled();
