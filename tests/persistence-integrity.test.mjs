@@ -62,3 +62,12 @@ test('return to title warns when local progress cannot be saved',()=>{
  assert.match(html,/const saved=save\(\)/);
  assert.match(html,/if\(!saved\)window\.alert\('Your journey could not be saved/);
 });
+
+test('paused gameplay does not accumulate movement input',()=>{
+ assert.match(html,/if\(!paused&&k!=='escape'\)keys\.add\(k\)/);
+ assert.match(html,/if\(!running\|\|paused\|\|!el\('gamePanel'\)\.hidden\)return;keys\.add\(k\)/);
+});
+
+test('resuming from keyboard and pause button restores playfield focus',()=>{
+ assert.match(html,/if\(!paused\)canvas\.focus\(\)/);
+});
