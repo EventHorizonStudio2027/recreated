@@ -40,3 +40,16 @@ test('title settings and ledger do not crash on malformed stored state', async (
   await expect(page.locator('#motion')).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test('switching tabs pauses gameplay and keeps a saved journey', async ({page}) => {
+  await page.goto(gameUrl);
+  await page.locator('#new').click();
+  await page.evaluate(()=>{
+    Object.defineProperty(document,'hidden',{configurable:true,get:()=>true});
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  await expect(page.locator('#pauseGame')).toHaveText('Resume');
+  await expect(page.locator('#saveStatus')).not.toHaveText('Save unavailable');
+  await page.locator('#returnTitle').click();
+  await expect(page.locator('#continue')).toBeEnabled();
+});
