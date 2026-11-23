@@ -71,3 +71,18 @@ test('paused gameplay does not accumulate movement input',()=>{
 test('resuming from keyboard and pause button restores playfield focus',()=>{
  assert.match(html,/if\(!paused\)canvas\.focus\(\)/);
 });
+
+test('opening game panels stops movement and focuses their close control',()=>{
+ assert.match(html,/function showPanel\(title,content\)\{keys\.clear\(\)/);
+ assert.match(html,/el\('closeGamePanel'\)\.focus\(\)/);
+});
+test('closing game panels restores game input focus',()=>{
+ assert.match(html,/el\('closeGamePanel'\)\.onclick=\(\)=>\{el\('gamePanel'\)\.hidden=true;keys\.clear\(\)/);
+});
+test('hidden tab checkpoints and pauses running game',()=>{
+ assert.match(html,/document\.addEventListener\('visibilitychange'/);
+ assert.match(html,/if\(running\)save\(\)/);
+});
+test('resuming refreshes frame time baseline',()=>{
+ assert.match(html,/last=performance\.now\(\);canvas\.focus\(\)/);
+});
