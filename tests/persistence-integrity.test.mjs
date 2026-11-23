@@ -48,3 +48,17 @@ test('gameplay hotkeys respect focused controls and pause clears movement',()=>{
 test('focus loss pauses play rather than allowing unintended movement',()=>{
  assert.match(html,/window\.addEventListener\('blur',\(\)=>\{keys\.clear\(\);if\(running&&!paused\)/);
 });
+
+test('combat shortcuts cannot auto-repeat or fire while paused',()=>{
+ assert.match(html,/if\(!e\.repeat&&!paused\)\{if\(k===' '\)attack\(\)/);
+ assert.match(html,/if\(k==='e'&&!paused&&!e\.repeat\)enter\('hub'\)/);
+});
+
+test('new or resumed runs clear held input',()=>{
+ assert.match(html,/function start\(fresh=false\)\{keys\.clear\(\)/);
+});
+
+test('return to title warns when local progress cannot be saved',()=>{
+ assert.match(html,/const saved=save\(\)/);
+ assert.match(html,/if\(!saved\)window\.alert\('Your journey could not be saved/);
+});
