@@ -1,6 +1,5 @@
 import {test,expect} from '@playwright/test';
-import {fileURLToPath} from 'node:url';
-const gameUrl = new URL('../../index.html', import.meta.url).href;
+const gameUrl = '/index.html';
 
 test('new journey, pause, panel navigation, save and continue', async ({page}) => {
   const errors=[];
