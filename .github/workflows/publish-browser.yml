@@ -25,6 +25,10 @@ jobs:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - name: Validate playable entrypoint
         run: test -s index.html
+      - name: Generate and validate Apple Home Screen icon
+        run: |
+          python3 -m pip install Pillow
+          python3 scripts/build-touch-icon.py
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
