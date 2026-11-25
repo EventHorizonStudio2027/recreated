@@ -1,0 +1,17 @@
+{
+  "name": "Recreated",
+  "short_name": "Recreated",
+  "id": "./",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#090811",
+  "theme_color": "#090811",
+  "icons": [
+    {
+      "src": "./apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}
